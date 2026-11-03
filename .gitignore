@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Downloaded data and local database state
+dataset/*
+!dataset/README.md
+neo4j_data/
+data/
+
+# Tool and editor state
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+.idea/
+.vscode/

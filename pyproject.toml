@@ -1,0 +1,14 @@
+[project]
+name = "supplygraph"
+version = "0.1.0"
+description = "A reproducible Neo4j project for supply-chain dependency and resilience analysis."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "neo4j>=5.22,<6",
+    "networkx>=3.4,<4",
+    "polars>=1.0,<2",
+]
+
+[tool.uv]
+package = false

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SupplyGraph workflow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper: #f5f5f5;
+      --color-ink: #2d3142;
+      --color-muted: #4f5d75;
+      --color-accent: #bf4520;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { min-height: 100vh; display: grid; place-items: center; padding: 3rem 2rem; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); }
+    .frame { width: 100%; max-width: 1200px; min-width: 0; }
+    .eyebrow { margin-bottom: .5rem; color: var(--color-muted); font: 500 .66rem var(--font-mono); letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin-bottom: 1.5rem; color: var(--color-ink); font: 400 clamp(1.5rem, 2.4vw + .75rem, 2rem)/1.15 var(--font-serif); letter-spacing: -.02em; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { display: block; width: 100%; min-width: 960px; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <p class="eyebrow">Flowchart · SupplyGraph</p>
+    <h1>From supply data to explainable risk analysis</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="supplygraph-workflow-title supplygraph-workflow-desc">
+        <title id="supplygraph-workflow-title">SupplyGraph workflow</title>
+        <desc id="supplygraph-workflow-desc">AnonNet data feeds a Neo4j graph and planned dependency analysis. Capacity and demand data determine whether results use structural exposure or a capacity-aware scenario, with assumptions shown.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+        </defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- Connectors are drawn first so they stay behind the nodes. -->
+        <line x1="480" y1="64" x2="480" y2="88" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="480" y1="136" x2="480" y2="160" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="480" y1="208" x2="480" y2="232" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="480" y1="280" x2="480" y2="304" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="592" y1="340" x2="680" y2="340" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="480" y1="376" x2="480" y2="400" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <path d="M790 364 V480 H484" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="480" y1="448" x2="480" y2="476" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="480" y1="484" x2="480" y2="500" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Decision labels sit on opaque paper masks with a clear gap from the stroke. -->
+        <rect x="626" y="322" width="24" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="638" y="331" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+        <rect x="488" y="380" width="32" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="504" y="389" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+
+        <!-- Input -->
+        <rect x="384" y="16" width="192" height="48" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="480" y="37" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">AnonNet data · ready</text>
+        <text x="480" y="53" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">7,245 nodes · 43,926 edges</text>
+
+        <!-- Runtime -->
+        <rect x="352" y="88" width="256" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="480" y="109" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Neo4j + GDS · ready</text>
+        <text x="480" y="125" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">local graph runtime</text>
+
+        <!-- Planned graph construction -->
+        <rect x="352" y="160" width="256" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="480" y="181" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Build dependency graph</text>
+        <text x="480" y="197" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">planned</text>
+
+        <!-- Planned analysis -->
+        <rect x="352" y="232" width="256" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="480" y="253" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Trace paths + rank alternatives</text>
+        <text x="480" y="269" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">planned</text>
+
+        <!-- Capacity decision -->
+        <polygon points="480,304 592,340 480,376 368,340" fill="#ffffff" stroke="#bf4520" stroke-width="1.4"/>
+        <text x="480" y="338" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Capacity + demand</text>
+        <text x="480" y="352" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">data available?</text>
+
+        <!-- Structural baseline branch -->
+        <rect x="680" y="316" width="220" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="790" y="337" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Structural exposure</text>
+        <text x="790" y="353" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">current data path</text>
+
+        <!-- Capacity-aware branch -->
+        <rect x="360" y="400" width="240" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="480" y="421" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Capacity-aware scenario</text>
+        <text x="480" y="437" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">with documented inputs</text>
+
+        <!-- Merge and explainable output -->
+        <circle cx="480" cy="480" r="4" fill="#2d3142"/>
+        <rect x="400" y="500" width="160" height="48" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="480" y="521" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Explainable result</text>
+        <text x="480" y="537" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">paths · assumptions · limits</text>
+
+        <text x="480" y="580" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif" text-anchor="middle">Dependency paths indicate potential exposure, not confirmed loss.</text>
+      </svg>
+    </div>
+  </main>
+</body>
+</html>
