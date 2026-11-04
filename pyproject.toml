@@ -8,6 +8,8 @@ dependencies = [
     "neo4j>=5.22,<6",
     "networkx>=3.4,<4",
     "polars>=1.0,<2",
+    "torch>=2.15.0",
+    "transformers>=5.22.1",
 ]
 
 [tool.uv]
