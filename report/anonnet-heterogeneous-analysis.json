@@ -1,0 +1,304 @@
+{
+  "networkx_version": "3.7",
+  "source_hashes": {
+    "nodes_sha256": "38ef22d13fca6e3950f22748a395d8263fdd2a872e3b61dc776ca1c00b62a693",
+    "edges_sha256": "27a141f1ac38588dd30100c362936778248f9fa7cd96163637f81098c46f8088"
+  },
+  "heterogeneous": {
+    "nodes": 11053,
+    "edges": 56389,
+    "node_types": {
+      "Company": 7245,
+      "LocationLabel": 102,
+      "ProductDescription": 3706
+    },
+    "edge_types": {
+      "REPORTED_LOCATION": 5755,
+      "REPORTED_DESCRIPTION": 6708,
+      "REPORTED_SUPPLY_LINK": 43926
+    },
+    "location_layer_is_bipartite": true,
+    "description_layer_is_bipartite": true
+  },
+  "supply": {
+    "nodes": 7245,
+    "unique_ordered_edges": 43926,
+    "source_rows_collapsed_in_simple_projection": 0,
+    "self_loops_excluded_from_undirected_analyses": 4,
+    "weak_components": 1,
+    "largest_strong_component": 3871,
+    "undirected_edges_excluding_self_loops": 41063,
+    "articulation_points": 419,
+    "top_source_degree": [
+      [
+        "n4859",
+        483
+      ],
+      [
+        "n6013",
+        418
+      ],
+      [
+        "n6000",
+        380
+      ],
+      [
+        "n3856",
+        362
+      ],
+      [
+        "n4229",
+        354
+      ],
+      [
+        "n6980",
+        327
+      ],
+      [
+        "n2824",
+        294
+      ],
+      [
+        "n4238",
+        282
+      ],
+      [
+        "n6689",
+        242
+      ],
+      [
+        "n693",
+        212
+      ]
+    ],
+    "top_undirected_degree": [
+      [
+        "n4859",
+        499
+      ],
+      [
+        "n5063",
+        459
+      ],
+      [
+        "n6013",
+        455
+      ],
+      [
+        "n6978",
+        396
+      ],
+      [
+        "n6000",
+        388
+      ],
+      [
+        "n3856",
+        382
+      ],
+      [
+        "n4229",
+        362
+      ],
+      [
+        "n1854",
+        348
+      ],
+      [
+        "n6980",
+        346
+      ],
+      [
+        "n5964",
+        312
+      ]
+    ],
+    "sampled_betweenness": {
+      "k": 32,
+      "seed": 42,
+      "normalized": true,
+      "top": [
+        [
+          "n6195",
+          0.053346000655844966
+        ],
+        [
+          "n6301",
+          0.04924836636950962
+        ],
+        [
+          "n5063",
+          0.04601070353467842
+        ],
+        [
+          "n6956",
+          0.0411168527158738
+        ],
+        [
+          "n6978",
+          0.03939737861336726
+        ],
+        [
+          "n2984",
+          0.036678066973297195
+        ],
+        [
+          "n4562",
+          0.03496903702472128
+        ],
+        [
+          "n2396",
+          0.034877254823939635
+        ],
+        [
+          "n3909",
+          0.03456638323848695
+        ],
+        [
+          "n6756",
+          0.0343382620459278
+        ]
+      ]
+    }
+  },
+  "locations": {
+    "labels": 102,
+    "companies_with_label": 5755,
+    "top": [
+      [
+        "Japan",
+        1099
+      ],
+      [
+        "China",
+        1086
+      ],
+      [
+        "United States",
+        720
+      ],
+      [
+        "South Korea",
+        481
+      ],
+      [
+        "Taiwan",
+        300
+      ],
+      [
+        "India",
+        249
+      ],
+      [
+        "Germany",
+        154
+      ],
+      [
+        "Indonesia",
+        129
+      ],
+      [
+        "United Kingdom",
+        119
+      ],
+      [
+        "Australia",
+        106
+      ]
+    ],
+    "non_self_supply_edges_with_both_locations": 33098,
+    "same_location_edges": 15900,
+    "different_location_edges": 17198
+  },
+  "descriptions": {
+    "unique_raw_cells": 3706,
+    "companies_with_description": 6708,
+    "exact_text_groups_at_least_two_companies": 462,
+    "exact_text_groups_with_two_known_location_labels": 333,
+    "top": [
+      [
+        "Asset Management",
+        188
+      ],
+      [
+        "Steel",
+        115
+      ],
+      [
+        "Industrial Support Services",
+        108
+      ],
+      [
+        "Software",
+        78
+      ],
+      [
+        "Various power semiconductor devices for Power ECU Part of Vehicle",
+        72
+      ],
+      [
+        "Chemical grade alumina",
+        67
+      ],
+      [
+        "Electronics/Electric Parts Part of Vehicle",
+        55
+      ],
+      [
+        "Various Motor Part of Vehicle",
+        55
+      ],
+      [
+        "Household Products",
+        54
+      ],
+      [
+        "Fertilizer",
+        53
+      ]
+    ],
+    "example_two_hop_path": {
+      "company_a": "n1085",
+      "location_a": "Indonesia",
+      "description": "Asset Management",
+      "company_b": "n1131",
+      "location_b": "South Korea",
+      "typed_path_hops": 2,
+      "direct_supply_edge_either_direction": false
+    }
+  },
+  "failure_experiment": {
+    "projection": "company-only undirected simple graph; self-loops removed",
+    "failure_count": 72,
+    "survivors": 7173,
+    "target_strategy": "highest original undirected degree, fixed ranking",
+    "targeted_largest_component": 6413,
+    "random_trials": 20,
+    "seed": 42,
+    "random_largest_component_mean": 7148.7,
+    "random_largest_component_min": 7090,
+    "random_largest_component_max": 7172,
+    "random_largest_component_each_trial": [
+      7148,
+      7172,
+      7166,
+      7141,
+      7145,
+      7134,
+      7146,
+      7151,
+      7147,
+      7143,
+      7160,
+      7128,
+      7090,
+      7169,
+      7148,
+      7163,
+      7166,
+      7166,
+      7131,
+      7160
+    ]
+  }
+}
