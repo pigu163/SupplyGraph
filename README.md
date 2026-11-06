@@ -2,9 +2,9 @@
 
 SupplyGraph models the anonymized AnonNet company network as a knowledge graph and studies structural exposure to disruption. Neo4j stores the graph; NetworkX supports reproducible local analysis.
 
-![SupplyGraph workflow](image/supplygraph-current.svg)
+![SupplyGraph architecture](image/supplygraph-architecture.svg)
 
-[Open the interactive workflow diagram](image/supplygraph-current.html).
+[Open the diagram HTML](image/supplygraph-architecture.html).
 
 ## Current status
 
@@ -63,7 +63,7 @@ After generating the categorized CSV, import the snapshot with:
 uv run --locked python scripts/graph/import_neo4j.py
 ```
 
-The importer records source rows and file hashes, preserves CSV edge direction and self-links, and can be rerun against the same snapshot. Reproducible Cypher and GDS queries are in [deep_analysis.cypher](scripts/graph/deep_analysis.cypher).
+The importer records source rows and file hashes, preserves CSV edge direction, self-links, and product text, and can be rerun against the same snapshot. It rejects a different or unknown existing snapshot before writing. Run imports one at a time; snapshot replacement is not automated. Reproducible Cypher and GDS queries are in [deep_analysis.cypher](scripts/graph/deep_analysis.cypher).
 
 ## Repository layout
 

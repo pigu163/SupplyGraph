@@ -33,6 +33,31 @@ def write_batch(session, query: str, rows: list[dict]) -> None:
     session.execute_write(lambda tx, batch: tx.run(query, rows=batch).consume(), rows)
 
 
+def ensure_snapshot_compatible(session, snapshot_id: str) -> None:
+    """Reject mixed or unidentifiable AnonNet data before creating constraints or writing."""
+    result = session.run(
+        """
+        CALL {
+            MATCH (c:AnonNetCompany)
+            WHERE c.snapshotId IS NULL OR c.snapshotId <> $snapshot_id
+            RETURN count(c) AS incompatible_companies
+        }
+        CALL {
+            MATCH ()-[r:REPORTED_SUPPLY_LINK]->()
+            WHERE r.snapshotId IS NULL OR r.snapshotId <> $snapshot_id
+            RETURN count(r) AS incompatible_links
+        }
+        RETURN incompatible_companies, incompatible_links
+        """,
+        snapshot_id=snapshot_id,
+    ).single()
+    if result["incompatible_companies"] or result["incompatible_links"]:
+        raise ValueError(
+            "The database contains AnonNet data from a different or unknown snapshot; "
+            "import into an empty database or the matching snapshot."
+        )
+
+
 def main() -> None:
     node_rows = read_csv(NODES)
     edge_rows = read_csv(EDGES)
@@ -45,7 +70,7 @@ def main() -> None:
     companies, locations, descriptions, categories = [], {}, {}, {}
     for source_record, row in enumerate(node_rows, start=1):
         company_id = row["id"]
-        description = row["products"].strip()
+        description = row["products"]
         category_id = row["product_category"].strip()
         country = row["country"].strip()
         companies.append({
@@ -58,7 +83,7 @@ def main() -> None:
         })
         if country and country.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
             locations[country] = {"label": country}
-        if description:
+        if description.strip():
             description_id = hashlib.sha256(description.encode("utf-8")).hexdigest()
             descriptions[description_id] = {"descriptionId": description_id, "text": description}
         if category_id and category_id.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
@@ -82,7 +107,8 @@ def main() -> None:
         auth=(os.getenv("NEO4J_USER", "neo4j"), os.getenv("NEO4J_PASSWORD", "supplygraph-local-only")),
     )
     driver.verify_connectivity()
-    with driver.session(database=os.getenv("NEO4J_DATABASE", "neo4j")) as session:
+    with driver, driver.session(database=os.getenv("NEO4J_DATABASE", "neo4j")) as session:
+        ensure_snapshot_compatible(session, snapshot_id)
         # Stable keys make rerunning this script safe for the same snapshot.
         for query in (
             "CREATE CONSTRAINT anonnet_company_id IF NOT EXISTS FOR (n:AnonNetCompany) REQUIRE n.anonnetId IS UNIQUE",
@@ -117,15 +143,15 @@ def main() -> None:
         for row in node_rows:
             company_id = row["id"]
             country = row["country"].strip()
-            description = row["products"].strip()
+            description = row["products"]
             category_id = row["product_category"].strip()
             if country in locations:
                 location_links.append({"company": company_id, "label": country})
-            if description:
+            if description.strip():
                 description_id = hashlib.sha256(description.encode("utf-8")).hexdigest()
                 description_links.append({"company": company_id, "descriptionId": description_id})
             if category_id in categories:
-                prediction = predictions[description]
+                prediction = predictions[description.strip()]
                 category_links.append({
                     "company": company_id,
                     "categoryId": category_id,
@@ -156,7 +182,6 @@ def main() -> None:
         }.items():
             counts[name] = session.run(query).single()["count"]
         print(counts)
-    driver.close()
 
 
 if __name__ == "__main__":
