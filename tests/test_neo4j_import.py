@@ -53,6 +53,23 @@ class InputFixture(unittest.TestCase):
 
 
 class ImportPreflightTest(InputFixture):
+    def test_unknown_edge_endpoints_are_rejected_before_connecting(self):
+        cases = [
+            ("missing", "n2"),
+            ("n1", "missing"),
+            ("missing-source", "missing-target"),
+            ("", "n2"),
+        ]
+        for source, target in cases:
+            with self.subTest(source=source, target=target):
+                self.write_csv(self.edges, ["source", "target"], [["n1", "n2"], [source, target]])
+                with patch.object(importer.GraphDatabase, "driver") as driver:
+                    with self.assertRaisesRegex(ValueError, "data record 2: unknown endpoint") as error:
+                        importer.main()
+                    self.assertIn(repr(source), str(error.exception))
+                    self.assertIn(repr(target), str(error.exception))
+                    driver.assert_not_called()
+
     def test_incompatible_or_missing_snapshot_is_rejected_before_writes(self):
         for companies, links in ((1, 0), (0, 1)):
             with self.subTest(companies=companies, links=links):
@@ -104,6 +121,12 @@ class Neo4jImportIntegrationTest(InputFixture):
                     importer.main()
                     self.assertEqual(snapshot(), before)
                     original_edges = self.edges.read_bytes()
+                    for source, target in (("missing", "n2"), ("n1", "missing")):
+                        with self.subTest(source=source, target=target):
+                            self.write_csv(self.edges, ["source", "target"], [["n1", "n2"], [source, target]])
+                            with self.assertRaisesRegex(ValueError, "unknown endpoint"):
+                                importer.main()
+                            self.assertEqual(snapshot(), before)
                     self.write_csv(self.edges, ["source", "target"], [["n2", "n1"]])
                     with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
                         importer.main()

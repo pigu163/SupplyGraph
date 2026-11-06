@@ -61,6 +61,14 @@ def ensure_snapshot_compatible(session, snapshot_id: str) -> None:
 def main() -> None:
     node_rows = read_csv(NODES)
     edge_rows = read_csv(EDGES)
+    company_ids = {row["id"] for row in node_rows}
+    for source_record, row in enumerate(edge_rows, start=1):
+        source, target = row["source"], row["target"]
+        if source not in company_ids or target not in company_ids:
+            raise ValueError(
+                f"{EDGES}: data record {source_record}: "
+                f"unknown endpoint {source!r} -> {target!r}"
+            )
     metadata = json.loads(NODES.with_suffix(".metadata.json").read_text(encoding="utf-8"))
     predictions = json.loads(NODES.with_suffix(".prediction_details.json").read_text(encoding="utf-8"))
     node_hash = hashlib.sha256(NODES.read_bytes()).hexdigest()
