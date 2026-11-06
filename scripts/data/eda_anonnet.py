@@ -11,6 +11,9 @@ from pathlib import Path
 import networkx as nx
 
 
+ROOT = Path(__file__).resolve().parents[2]
+
+
 def read_csv(path: Path, expected_columns: list[str]) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle, strict=True)
@@ -44,7 +47,7 @@ def degree_summary(degrees: list[tuple[str, int]]) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data-dir", type=Path, default=Path("dataset"))
+    parser.add_argument("--data-dir", type=Path, default=ROOT / "dataset")
     args = parser.parse_args()
 
     node_path = args.data_dir / "nodes_anon.csv"

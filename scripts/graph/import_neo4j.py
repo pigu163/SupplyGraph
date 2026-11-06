@@ -1,0 +1,163 @@
+"""Import the AnonNet heterogeneous graph into the local Neo4j database."""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import os
+from pathlib import Path
+
+from neo4j import GraphDatabase
+
+
+ROOT = Path(__file__).resolve().parents[2]
+DATA = ROOT / "dataset"
+NODES = DATA / "derived" / "nodes_anon_categorized.csv"
+EDGES = DATA / "edges_anon.csv"
+BATCH_SIZE = 1_000
+
+
+def read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8-sig", newline="") as file:
+        return list(csv.DictReader(file))
+
+
+def chunks(rows: list[dict], size: int = BATCH_SIZE):
+    for start in range(0, len(rows), size):
+        yield rows[start : start + size]
+
+
+def write_batch(session, query: str, rows: list[dict]) -> None:
+    # One managed transaction per batch keeps writes grouped and resumable.
+    session.execute_write(lambda tx, batch: tx.run(query, rows=batch).consume(), rows)
+
+
+def main() -> None:
+    node_rows = read_csv(NODES)
+    edge_rows = read_csv(EDGES)
+    metadata = json.loads(NODES.with_suffix(".metadata.json").read_text(encoding="utf-8"))
+    predictions = json.loads(NODES.with_suffix(".prediction_details.json").read_text(encoding="utf-8"))
+    node_hash = hashlib.sha256(NODES.read_bytes()).hexdigest()
+    edge_hash = hashlib.sha256(EDGES.read_bytes()).hexdigest()
+    snapshot_id = f"anonnet:{node_hash}:{edge_hash}"
+
+    companies, locations, descriptions, categories = [], {}, {}, {}
+    for source_record, row in enumerate(node_rows, start=1):
+        company_id = row["id"]
+        description = row["products"].strip()
+        category_id = row["product_category"].strip()
+        country = row["country"].strip()
+        companies.append({
+            "anonnetId": company_id,
+            "locationRaw": row["location"] or None,
+            "productsRaw": row["products"] or None,
+            "snapshotId": snapshot_id,
+            "nodeFileSha256": node_hash,
+            "sourceRecord": source_record,
+        })
+        if country and country.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
+            locations[country] = {"label": country}
+        if description:
+            description_id = hashlib.sha256(description.encode("utf-8")).hexdigest()
+            descriptions[description_id] = {"descriptionId": description_id, "text": description}
+        if category_id and category_id.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
+            categories[category_id] = {"categoryId": category_id, "label": category_id}
+
+    edges = [
+        {
+            "source": row["source"],
+            "target": row["target"],
+            "snapshotId": snapshot_id,
+            "edgeFileSha256": edge_hash,
+            "sourceRecord": source_record,
+            "directionMeaning": "file_source_to_target_business_direction_unverified",
+            "isSelfLoop": row["source"] == row["target"],
+        }
+        for source_record, row in enumerate(edge_rows, start=1)
+    ]
+
+    driver = GraphDatabase.driver(
+        os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+        auth=(os.getenv("NEO4J_USER", "neo4j"), os.getenv("NEO4J_PASSWORD", "supplygraph-local-only")),
+    )
+    driver.verify_connectivity()
+    with driver.session(database=os.getenv("NEO4J_DATABASE", "neo4j")) as session:
+        # Stable keys make rerunning this script safe for the same snapshot.
+        for query in (
+            "CREATE CONSTRAINT anonnet_company_id IF NOT EXISTS FOR (n:AnonNetCompany) REQUIRE n.anonnetId IS UNIQUE",
+            "CREATE CONSTRAINT anonnet_location_label IF NOT EXISTS FOR (n:LocationLabel) REQUIRE n.label IS UNIQUE",
+            "CREATE CONSTRAINT anonnet_description_id IF NOT EXISTS FOR (n:ProductDescription) REQUIRE n.descriptionId IS UNIQUE",
+            "CREATE CONSTRAINT anonnet_category_id IF NOT EXISTS FOR (n:ProductCategory) REQUIRE n.categoryId IS UNIQUE",
+        ):
+            session.run(query).consume()
+
+        for query, rows in (
+            ("UNWIND $rows AS row MERGE (n:Company:AnonNetCompany {anonnetId: row.anonnetId}) SET n += row", companies),
+            ("UNWIND $rows AS row MERGE (n:LocationLabel {label: row.label})", list(locations.values())),
+            ("UNWIND $rows AS row MERGE (n:ProductDescription {descriptionId: row.descriptionId}) SET n.text = row.text", list(descriptions.values())),
+            ("UNWIND $rows AS row MERGE (n:ProductCategory {categoryId: row.categoryId}) SET n.label = row.label", list(categories.values())),
+        ):
+            for batch in chunks(rows):
+                write_batch(session, query, batch)
+
+        # Keep the CSV source/target direction and source line on each edge.
+        supply_query = """
+        UNWIND $rows AS row
+        MATCH (a:AnonNetCompany {anonnetId: row.source})
+        MATCH (b:AnonNetCompany {anonnetId: row.target})
+        MERGE (a)-[r:REPORTED_SUPPLY_LINK {snapshotId: row.snapshotId, sourceRecord: row.sourceRecord}]->(b)
+        SET r += row
+        """
+        for batch in chunks(edges):
+            write_batch(session, supply_query, batch)
+
+        location_links, description_links, category_links = [], [], []
+        model = metadata["model"]
+        for row in node_rows:
+            company_id = row["id"]
+            country = row["country"].strip()
+            description = row["products"].strip()
+            category_id = row["product_category"].strip()
+            if country in locations:
+                location_links.append({"company": company_id, "label": country})
+            if description:
+                description_id = hashlib.sha256(description.encode("utf-8")).hexdigest()
+                description_links.append({"company": company_id, "descriptionId": description_id})
+            if category_id in categories:
+                prediction = predictions[description]
+                category_links.append({
+                    "company": company_id,
+                    "categoryId": category_id,
+                    "score": float(prediction["score"]),
+                    "model": model,
+                    "modelRevision": metadata["modelRevision"],
+                    "taxonomyVersion": metadata["taxonomyVersion"],
+                })
+
+        for query, rows in (
+            ("UNWIND $rows AS row MATCH (c:AnonNetCompany {anonnetId: row.company}), (l:LocationLabel {label: row.label}) MERGE (c)-[:REPORTED_LOCATION]->(l)", location_links),
+            ("UNWIND $rows AS row MATCH (c:AnonNetCompany {anonnetId: row.company}), (d:ProductDescription {descriptionId: row.descriptionId}) MERGE (c)-[:REPORTED_DESCRIPTION]->(d)", description_links),
+            ("UNWIND $rows AS row MATCH (c:AnonNetCompany {anonnetId: row.company}), (k:ProductCategory {categoryId: row.categoryId}) MERGE (c)-[r:PREDICTED_CATEGORY]->(k) SET r.score = row.score, r.model = row.model, r.modelRevision = row.modelRevision, r.taxonomyVersion = row.taxonomyVersion", category_links),
+        ):
+            for batch in chunks(rows):
+                write_batch(session, query, batch)
+
+        counts = {}
+        for name, query in {
+            "companies": "MATCH (n:AnonNetCompany) RETURN count(n) AS count",
+            "supplyLinks": "MATCH ()-[r:REPORTED_SUPPLY_LINK]->() RETURN count(r) AS count",
+            "locations": "MATCH (n:LocationLabel) RETURN count(n) AS count",
+            "locationLinks": "MATCH ()-[r:REPORTED_LOCATION]->() RETURN count(r) AS count",
+            "descriptions": "MATCH (n:ProductDescription) RETURN count(n) AS count",
+            "descriptionLinks": "MATCH ()-[r:REPORTED_DESCRIPTION]->() RETURN count(r) AS count",
+            "categories": "MATCH (n:ProductCategory) RETURN count(n) AS count",
+            "categoryLinks": "MATCH ()-[r:PREDICTED_CATEGORY]->() RETURN count(r) AS count",
+        }.items():
+            counts[name] = session.run(query).single()["count"]
+        print(counts)
+    driver.close()
+
+
+if __name__ == "__main__":
+    main()

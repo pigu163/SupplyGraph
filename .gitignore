@@ -16,7 +16,7 @@ dataset/*
 !dataset/README.md
 models/deberta-v3-base-zeroshot-v2.0/
 neo4j_data/
-data/
+/data/
 
 # Tool and editor state
 .pytest_cache/

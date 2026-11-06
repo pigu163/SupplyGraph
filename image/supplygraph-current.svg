@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="supplygraph-current-title supplygraph-current-desc" id="supplygraph-current-root">
+        <title id="supplygraph-current-title">SupplyGraph workflow</title>
+        <desc id="supplygraph-current-desc">Company descriptions are classified, combined with reported links in a NetworkX graph, and analyzed. Neo4j snapshot import and baseline analysis are implemented; supplier alternatives and capacity-aware simulation are planned.</desc>
+        <defs>
+      <style>#supplygraph-current-root { color: #2d3142; font-family: 'Geist', Arial, sans-serif; }
+      #supplygraph-current-root .diagram-container { width: 100%; overflow-x: auto; }
+      @media print {
+#supplygraph-current-root .diagram-container { overflow-x: visible; }
+}</style>
+          <marker id="supplygraph-current-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="supplygraph-current-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+        </defs>
+        <rect x="0" y="0" width="1280" height="720" fill="#f5f5f5"/>
+        <text x="48" y="64" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">SUPPLYGRAPH / CURRENT WORKFLOW</text>
+        <text x="48" y="108" fill="#2d3142" font-family="'Instrument Serif', Georgia, serif" font-size="32">From source records to graph analysis</text>
+        <text x="48" y="140" fill="#4f5d75" font-family="'Geist', Arial, sans-serif" font-size="15">Local analysis uses reported links and model-predicted categories.</text>
+
+        <!-- Connections are drawn before their endpoints. -->
+        <line x1="216" y1="246" x2="288" y2="246" stroke="#4f5d75" stroke-width="2" marker-end="url(#supplygraph-current-arrow)"/>
+        <line x1="464" y1="246" x2="536" y2="246" stroke="#4f5d75" stroke-width="2" marker-end="url(#supplygraph-current-arrow)"/>
+        <line x1="712" y1="246" x2="784" y2="246" stroke="#bf4520" stroke-width="2" marker-end="url(#supplygraph-current-arrow-accent)"/>
+        <line x1="960" y1="246" x2="1032" y2="246" stroke="#4f5d75" stroke-width="2" marker-end="url(#supplygraph-current-arrow)"/>
+        <path d="M 712 428 H 744 Q 752 428 752 420 V 340 Q 752 332 760 332 H 864 Q 872 332 872 324 V 296" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#supplygraph-current-arrow)"/>
+        <rect x="714" y="221" width="68" height="16" fill="#f5f5f5"/>
+        <text x="748" y="233" text-anchor="middle" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="9">TAGGED CSV</text>
+
+        <g font-family="'Geist', Arial, sans-serif" fill="#2d3142">
+          <rect x="40" y="196" width="176" height="100" rx="6" fill="#ffffff" stroke="#bfc0c0"/>
+          <text x="56" y="220" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10">SOURCE</text>
+          <text x="56" y="248" font-size="15" font-weight="600">Company rows</text>
+          <text x="56" y="274" fill="#4f5d75" font-size="12">nodes_anon.csv</text>
+
+          <rect x="288" y="196" width="176" height="100" rx="6" fill="#ffffff" stroke="#bfc0c0"/>
+          <text x="304" y="220" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10">EXPERIMENTAL</text>
+          <text x="304" y="248" font-size="15" font-weight="600">Classify text</text>
+          <text x="304" y="274" fill="#4f5d75" font-size="12">DeBERTa · MPS</text>
+
+          <rect x="536" y="196" width="176" height="100" rx="6" fill="#ffffff" stroke="#bfc0c0"/>
+          <text x="552" y="220" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10">DERIVED</text>
+          <text x="552" y="248" font-size="15" font-weight="600">Categorized CSV</text>
+          <text x="552" y="274" fill="#4f5d75" font-size="12">country · category</text>
+
+          <rect x="784" y="196" width="176" height="100" rx="6" fill="#fff7f3" stroke="#bf4520" stroke-width="2"/>
+          <text x="800" y="220" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="10">NETWORKX</text>
+          <text x="800" y="248" font-size="15" font-weight="600">Typed graph</text>
+          <text x="800" y="274" fill="#4f5d75" font-size="12">company · labels</text>
+
+          <rect x="1032" y="196" width="176" height="100" rx="6" fill="#ffffff" stroke="#bfc0c0"/>
+          <text x="1048" y="220" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10">OUTPUT</text>
+          <text x="1048" y="248" font-size="15" font-weight="600">Analysis report</text>
+          <text x="1048" y="274" fill="#4f5d75" font-size="12">structure · scenarios</text>
+
+          <rect x="536" y="380" width="176" height="96" rx="6" fill="#ffffff" stroke="#bfc0c0"/>
+          <text x="552" y="404" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10">SOURCE</text>
+          <text x="552" y="432" font-size="15" font-weight="600">Supply links</text>
+          <text x="552" y="458" fill="#4f5d75" font-size="12">edges_anon.csv</text>
+
+          <rect x="784" y="500" width="424" height="92" rx="6" fill="#ffffff" stroke="#4f5d75"/>
+          <text x="800" y="524" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="10">IMPLEMENTED</text>
+          <text x="800" y="552" font-size="15" font-weight="600">Neo4j import · Cypher · GDS</text>
+          <text x="800" y="576" fill="#4f5d75" font-size="12">Snapshot import and structural analysis complete</text>
+        </g>
+        <line x1="48" y1="644" x2="1232" y2="644" stroke="#bfc0c0"/>
+        <text x="48" y="674" fill="#4f5d75" font-family="'Geist', Arial, sans-serif" font-size="13">Solid: implemented local workflow</text>
+        <text x="390" y="674" fill="#4f5d75" font-family="'Geist', Arial, sans-serif" font-size="13">Planned: alternatives + simulation</text>
+        <text x="700" y="674" fill="#4f5d75" font-family="'Geist', Arial, sans-serif" font-size="13">Categories are model predictions</text>
+      </svg>

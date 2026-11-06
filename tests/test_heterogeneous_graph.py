@@ -19,8 +19,8 @@ def load_module(name, path):
     return module
 
 
-construct = load_module("construct", ROOT / "scripts/graph_construct/construct.py")
-analysis = load_module("analysis", ROOT / "scripts/graph_construct/analyze.py")
+construct = load_module("construct", ROOT / "scripts/graph/construct.py")
+analysis = load_module("analysis", ROOT / "scripts/graph/analyze.py")
 
 
 class HeterogeneousGraphTest(unittest.TestCase):
@@ -82,6 +82,29 @@ class HeterogeneousGraphTest(unittest.TestCase):
         self.write(self.edges, ["source", "target"], [["n1", "missing"]])
         with self.assertRaisesRegex(ValueError, "unknown endpoint"):
             construct.build_graph(self.nodes, self.edges)
+
+    def test_predicted_categories_and_missing_values_stay_out_of_supply_graph(self):
+        self.write(self.nodes, ["id", "location", "products", "country", "product_category"], [
+            ["n1", "Japan", "Steel", "Japan", "METALS"],
+            ["n2", "Japan", "Wire", "Japan", "METALS"],
+            ["n3", "", "", "None", "None"],
+        ])
+        graph = construct.build_graph(self.nodes, self.edges)
+        category = "category:METALS"
+        self.assertEqual(graph.nodes[category]["kind"], "ProductCategory")
+        self.assertEqual(graph.number_of_edges("company:n1", category), 1)
+        self.assertNotIn("category:None", graph)
+        graph_path = Path(self.temp.name) / "categorized.graphml"
+        nx.write_graphml_xml(graph, graph_path)
+        graph = nx.read_graphml(graph_path, force_multigraph=True)
+        self.assertEqual(graph.nodes[category]["label"], "METALS")
+        supply, _, _ = analysis.project(graph)
+        self.assertEqual(supply.number_of_edges(), 3)
+        self.assertNotIn(category, supply)
+        result = analysis.analyze(graph, samples=3, trials=3)
+        self.assertEqual(result["predicted_categories"]["companies_with_category"], 2)
+        self.assertEqual(result["predicted_categories"]["companies_without_category"], 1)
+        self.assertEqual(result["predicted_categories"]["same_category_edges"], 2)
 
     def test_duplicate_company_is_rejected(self):
         self.write(self.nodes, ["id", "location", "products"], [["n1", "", ""], ["n1", "", ""]])
