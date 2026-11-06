@@ -68,6 +68,7 @@ def largest_after_removal(graph: nx.Graph, nodes: list[str]) -> int:
 
 
 def analyze(graph: nx.MultiDiGraph, seed: int = 42, samples: int = 32, trials: int = 20) -> dict:
+    """Summarize supply connections and compare targeted with random node failures."""
     if not graph.is_directed() or not graph.is_multigraph():
         raise ValueError("Expected a directed multigraph")
     node_counts = Counter(data["kind"] for _, data in graph.nodes(data=True))
@@ -216,9 +217,7 @@ def analyze(graph: nx.MultiDiGraph, seed: int = 42, samples: int = 32, trials: i
                           "nodes_file": graph.graph.get("nodes_file", "unknown"),
                           "node_input_kind": graph.graph.get("node_input_kind", "raw"),
                           "raw_nodes_sha256": graph.graph.get("raw_nodes_sha256", "unknown"),
-                          "raw_nodes_verified": graph.graph.get("raw_nodes_verified", False),
-                          "category_metadata_sha256": graph.graph.get("category_metadata_sha256", "unavailable"),
-                          "category_details_sha256": graph.graph.get("category_details_sha256", "unavailable")},
+                          "raw_nodes_verified": graph.graph.get("raw_nodes_verified", False)},
         "category_provenance": {"model": graph.graph.get("category_model", "unknown"),
                                 "revision": graph.graph.get("category_model_revision", "unknown"),
                                 "taxonomy_version": graph.graph.get("category_taxonomy_version", "unknown")},
@@ -288,7 +287,7 @@ def render_report(result: dict, graph_path: Path) -> str:
         ("数据来源：本地 AnonNet 分类 CSV 与原始关系 CSV；源网络快照产生日期未知。分析不连接 Neo4j。"
          if categorized_input else "数据来源：本地 AnonNet 原始节点与关系 CSV；源网络快照产生日期未知。分析不连接 Neo4j。"), "",
         "## 图如何构建", "",
-        "使用 `networkx.MultiDiGraph`；节点 ID 有类型前缀，地点和产品描述节点使用完整文本的 SHA-256 作为稳定标识。",
+        "使用 `networkx.MultiDiGraph`；节点 ID 有类型前缀，地点和产品描述节点使用对应文本作为标识。",
         f"每个公司保留原始字段；地点标签使用节点文件的 {location_source} 列并去除首尾空格，边保留原始地点文本；产品描述保留整个原始 CSV 单元格，不按逗号拆分。",
         "缺失字段不建立未知共享节点。供应关系按 CSV 的 source → target 保存，业务上下游方向尚未证实；自连接、反向边和重复输入行均保留。", "",
         "| 节点类型 | 数量 | 含义 |", "|---|---:|---|",
@@ -396,8 +395,7 @@ def render_report(result: dict, graph_path: Path) -> str:
             f"关系文件 SHA-256：`{result['source_hashes']['edges_sha256']}`。",
             f"分类前节点文件 SHA-256：`{result['source_hashes']['raw_nodes_sha256']}`；"
             f"原始节点字段与分类 CSV 逐行核对：{'通过' if result['source_hashes']['raw_nodes_verified'] else '未核对（原始文件或来源元数据不可用）'}。",
-            f"分类模型：`{result['category_provenance']['model']}`；版本：`{result['category_provenance']['revision']}`；taxonomy：`{result['category_provenance']['taxonomy_version']}`。"
-            f"分类元数据 SHA-256：`{result['source_hashes']['category_metadata_sha256']}`；分数明细 SHA-256：`{result['source_hashes']['category_details_sha256']}`。",
+            f"分类模型：`{result['category_provenance']['model']}`；版本：`{result['category_provenance']['revision']}`；taxonomy：`{result['category_provenance']['taxonomy_version']}`。",
             "图构建、GraphML 读取及分析结果均基于本地 CSV；脚本不修改源文件或数据库。", "",
             "NetworkX 官方说明：[二部图及节点集合](https://networkx.org/documentation/stable/reference/algorithms/bipartite.html) · "
             "[介数中心性](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.betweenness_centrality.html)。", ""]

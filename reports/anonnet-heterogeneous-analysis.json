@@ -6,9 +6,7 @@
     "nodes_file": "nodes_anon_categorized.csv",
     "node_input_kind": "categorized",
     "raw_nodes_sha256": "38ef22d13fca6e3950f22748a395d8263fdd2a872e3b61dc776ca1c00b62a693",
-    "raw_nodes_verified": true,
-    "category_metadata_sha256": "0b103bfdf7cbf926a7b5560d4887028146772e6a98cb5c0e540f35ccf8736d3f",
-    "category_details_sha256": "3b9919ff9591b53b0e8c3b82cced895daf138bbb927e976a011bd8757bbd23cc"
+    "raw_nodes_verified": true
   },
   "category_provenance": {
     "model": "MoritzLaurer/deberta-v3-base-zeroshot-v2.0",

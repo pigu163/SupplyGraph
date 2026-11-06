@@ -63,6 +63,7 @@ def ensure_snapshot_compatible(session, snapshot_id: str, metadata_hash: str, de
 
 
 def main() -> None:
+    """Validate the input snapshot, then import nodes and relationships in batches."""
     node_rows = read_csv(NODES)
     edge_rows = read_csv(EDGES)
     company_ids: set[str] = set()
