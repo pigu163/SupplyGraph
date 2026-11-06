@@ -33,13 +33,15 @@ def write_batch(session, query: str, rows: list[dict]) -> None:
     session.execute_write(lambda tx, batch: tx.run(query, rows=batch).consume(), rows)
 
 
-def ensure_snapshot_compatible(session, snapshot_id: str) -> None:
-    """Reject mixed or unidentifiable AnonNet data before creating constraints or writing."""
+def ensure_snapshot_compatible(session, snapshot_id: str, metadata_hash: str, details_hash: str) -> None:
+    """Reject a different or unidentifiable input snapshot before writing."""
     result = session.run(
         """
         CALL {
             MATCH (c:AnonNetCompany)
             WHERE c.snapshotId IS NULL OR c.snapshotId <> $snapshot_id
+               OR c.categoryMetadataSha256 IS NULL OR c.categoryMetadataSha256 <> $metadata_hash
+               OR c.predictionDetailsSha256 IS NULL OR c.predictionDetailsSha256 <> $details_hash
             RETURN count(c) AS incompatible_companies
         }
         CALL {
@@ -50,10 +52,12 @@ def ensure_snapshot_compatible(session, snapshot_id: str) -> None:
         RETURN incompatible_companies, incompatible_links
         """,
         snapshot_id=snapshot_id,
+        metadata_hash=metadata_hash,
+        details_hash=details_hash,
     ).single()
     if result["incompatible_companies"] or result["incompatible_links"]:
         raise ValueError(
-            "The database contains AnonNet data from a different or unknown snapshot; "
+            "The database contains AnonNet data from a different or unknown snapshot or classification input; "
             "import into an empty database or the matching snapshot."
         )
 
@@ -81,8 +85,12 @@ def main() -> None:
                 f"{EDGES}: data record {source_record}: "
                 f"unknown endpoint {source!r} -> {target!r}"
             )
-    metadata = json.loads(NODES.with_suffix(".metadata.json").read_text(encoding="utf-8"))
-    predictions = json.loads(NODES.with_suffix(".prediction_details.json").read_text(encoding="utf-8"))
+    metadata_bytes = NODES.with_suffix(".metadata.json").read_bytes()
+    details_bytes = NODES.with_suffix(".prediction_details.json").read_bytes()
+    metadata = json.loads(metadata_bytes)
+    predictions = json.loads(details_bytes)
+    metadata_hash = hashlib.sha256(metadata_bytes).hexdigest()
+    details_hash = hashlib.sha256(details_bytes).hexdigest()
     node_hash = hashlib.sha256(NODES.read_bytes()).hexdigest()
     edge_hash = hashlib.sha256(EDGES.read_bytes()).hexdigest()
     snapshot_id = f"anonnet:{node_hash}:{edge_hash}"
@@ -101,6 +109,8 @@ def main() -> None:
             "productsRaw": row["products"] or None,
             "snapshotId": snapshot_id,
             "nodeFileSha256": node_hash,
+            "categoryMetadataSha256": metadata_hash,
+            "predictionDetailsSha256": details_hash,
             "sourceRecord": source_record,
         })
         if country and country.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
@@ -143,7 +153,7 @@ def main() -> None:
     )
     driver.verify_connectivity()
     with driver, driver.session(database=os.getenv("NEO4J_DATABASE", "neo4j")) as session:
-        ensure_snapshot_compatible(session, snapshot_id)
+        ensure_snapshot_compatible(session, snapshot_id, metadata_hash, details_hash)
         # Stable keys make rerunning this script safe for the same snapshot.
         for query in (
             "CREATE CONSTRAINT anonnet_company_id IF NOT EXISTS FOR (n:AnonNetCompany) REQUIRE n.anonnetId IS UNIQUE",

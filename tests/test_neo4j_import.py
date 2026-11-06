@@ -128,7 +128,8 @@ class Neo4jImportIntegrationTest(InputFixture):
                     def snapshot():
                         companies = [dict(record) for record in session.run(
                             "MATCH (c:AnonNetCompany) RETURN c.anonnetId AS id, c.snapshotId AS snapshot, "
-                            "c.locationRaw AS location, c.productsRaw AS products ORDER BY id"
+                            "c.locationRaw AS location, c.productsRaw AS products, "
+                            "c.categoryMetadataSha256 AS metadata_hash, c.predictionDetailsSha256 AS details_hash ORDER BY id"
                         )]
                         descriptions = [dict(record) for record in session.run(
                             "MATCH (c:AnonNetCompany)-[:REPORTED_DESCRIPTION]->(d:ProductDescription) "
@@ -150,6 +151,12 @@ class Neo4jImportIntegrationTest(InputFixture):
                         [hashlib.sha256(value.encode()).hexdigest() for value in ("Steel", " Steel ")],
                     )
                     self.assertIn({"type": "REPORTED_SUPPLY_LINK", "count": 1}, before[2])
+                    self.assertEqual(before[0][0]["metadata_hash"], hashlib.sha256(
+                        self.nodes.with_suffix(".metadata.json").read_bytes()
+                    ).hexdigest())
+                    self.assertEqual(before[0][0]["details_hash"], hashlib.sha256(
+                        self.nodes.with_suffix(".prediction_details.json").read_bytes()
+                    ).hexdigest())
                     self.assertEqual(before[3], [
                         {"company": "n1", "category": "METALS", "score": 0.7},
                         {"company": "n2", "category": "METALS", "score": 0.7},
@@ -165,6 +172,22 @@ class Neo4jImportIntegrationTest(InputFixture):
                         importer.main()
                     self.assertEqual(snapshot(), before)
                     details_path.write_bytes(original_details)
+                    details_path.write_text(
+                        json.dumps({"Steel": {"category": "METALS", "score": 0.2}}), encoding="utf-8"
+                    )
+                    with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
+                        importer.main()
+                    self.assertEqual(snapshot(), before)
+                    details_path.write_bytes(original_details)
+                    metadata_path = self.nodes.with_suffix(".metadata.json")
+                    original_metadata = metadata_path.read_bytes()
+                    metadata = json.loads(original_metadata)
+                    metadata["modelRevision"] = "another-revision"
+                    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
+                        importer.main()
+                    self.assertEqual(snapshot(), before)
+                    metadata_path.write_bytes(original_metadata)
                     original_edges = self.edges.read_bytes()
                     self.write_csv(self.edges, ["source", "target"], [["n2", "n1"]])
                     with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
@@ -177,7 +200,10 @@ class Neo4jImportIntegrationTest(InputFixture):
                         importer.main()
                     self.assertEqual(snapshot(), before)
                     self.nodes.write_bytes(original_nodes)
-                    session.run("CREATE (:AnonNetCompany {anonnetId: 'legacy'})").consume()
+                    session.run(
+                        "MATCH (c:AnonNetCompany {anonnetId: 'n1'}) "
+                        "CREATE (:AnonNetCompany {anonnetId: 'legacy', snapshotId: c.snapshotId})"
+                    ).consume()
                     with_unknown = snapshot()
                     with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
                         importer.main()

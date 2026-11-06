@@ -63,7 +63,7 @@ After generating the categorized CSV, import the snapshot with:
 uv run --locked python scripts/graph/import_neo4j.py
 ```
 
-The importer checks that company IDs are unique, nonblank, and have no surrounding whitespace, and that every link endpoint exists in the company CSV before connecting to Neo4j. It records source rows and file hashes, preserves CSV edge direction, self-links, and product text, and can be rerun against the same snapshot. It rejects a different or unknown existing snapshot before writing. Run imports one at a time; snapshot replacement is not automated. Reproducible Cypher and GDS queries are in [deep_analysis.cypher](scripts/graph/deep_analysis.cypher).
+The importer checks company IDs, link endpoints, and prediction details before writing. It records source rows and hashes for both CSVs and classification sidecars, and can be rerun with the same inputs. Imports created before sidecar hashes were recorded cannot be verified and require a fresh database for reimport. Run imports one at a time; snapshot replacement is not automated. Reproducible Cypher and GDS queries are in [deep_analysis.cypher](scripts/graph/deep_analysis.cypher).
 
 ## Repository layout
 

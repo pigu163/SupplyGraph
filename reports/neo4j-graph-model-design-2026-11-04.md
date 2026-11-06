@@ -26,6 +26,7 @@
 | 同上 | `locationRaw: STRING` | `nodes_anon.csv.location` 原文 | 空白对应缺失属性；不是完整工厂或经营地点清单。 |
 | 同上 | `productsRaw: STRING` | `nodes_anon.csv.products` 整个单元格原文 | 空白对应缺失属性；不按逗号拆分，也不视为已核实的标准产品。 |
 | 同上 | `snapshotId: STRING`, `nodeFileSha256: STRING`, `sourceRecord: INTEGER` | 输入快照、节点文件哈希和数据记录序号 | `sourceRecord` 从 1 开始，不含表头；用于回溯，不作为公司唯一键。 |
+| 同上 | `categoryMetadataSha256: STRING`, `predictionDetailsSha256: STRING` | 分类元数据和预测明细文件哈希 | 用于确认重复导入使用相同的分类输入。 |
 | `LocationLabel` | `label: STRING` | 分类 CSV 中的 `country` 标签 | 每个不同标签一个节点；未知标记不建立节点。 |
 | `ProductDescription` | `descriptionId: STRING`, `text: STRING` | 产品描述原文和其 SHA-256 | 描述原文作为节点内容保存，哈希作为稳定键；不拆成单个产品。 |
 | `ProductCategory` | `categoryId: STRING`, `label: STRING` | DeBERTa 预测的项目类别 | 17 个共享类别节点；它们表示模型分类，不代表已核实供货能力。 |
@@ -34,7 +35,7 @@
 
 本方案只容纳一个活动的 AnonNet 输入快照：`snapshotId` 定义为 `anonnet:<nodes文件SHA-256>:<edges文件SHA-256>`。两个文件的完整哈希见[来源记录](../dataset/README.md)。如要同时保存多个快照，需要先另行设计公司属性的版本化；不得用新快照静默覆盖旧属性。
 
-导入器在写入前检查已有公司和供应关系的快照 ID；若发现不同或缺失的 ID，则拒绝导入。导入任务应串行运行，当前不提供自动替换快照的操作。
+导入器在写入前检查已有公司和供应关系的快照 ID，以及公司节点上的分类元数据和预测明细文件哈希；不一致或缺失时拒绝导入。旧版导入未记录这些哈希，需要使用空数据库重新导入。导入任务应串行运行，当前不提供自动替换快照的操作。
 
 ### 关系
 
