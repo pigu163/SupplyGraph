@@ -88,9 +88,11 @@ def main() -> None:
     snapshot_id = f"anonnet:{node_hash}:{edge_hash}"
 
     companies, locations, descriptions, categories = [], {}, {}, {}
+    location_links, description_links, category_links = [], [], []
     for source_record, row in enumerate(node_rows, start=1):
         company_id = row["id"]
         description = row["products"]
+        description_key = description.strip()
         category_id = row["product_category"].strip()
         country = row["country"].strip()
         companies.append({
@@ -103,11 +105,24 @@ def main() -> None:
         })
         if country and country.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
             locations[country] = {"label": country}
-        if description.strip():
+            location_links.append({"company": company_id, "label": country})
+        if description_key:
             description_id = hashlib.sha256(description.encode("utf-8")).hexdigest()
             descriptions[description_id] = {"descriptionId": description_id, "text": description}
+            description_links.append({"company": company_id, "descriptionId": description_id})
         if category_id and category_id.casefold() not in {"none", "null", "unknown", "n/a", "na"}:
+            prediction = predictions.get(description_key)
+            if not description_key or not prediction or prediction.get("category") != category_id:
+                raise ValueError(f"Prediction details disagree for {company_id}")
             categories[category_id] = {"categoryId": category_id, "label": category_id}
+            category_links.append({
+                "company": company_id,
+                "categoryId": category_id,
+                "score": float(prediction["score"]),
+                "model": metadata["model"],
+                "modelRevision": metadata["modelRevision"],
+                "taxonomyVersion": metadata["taxonomyVersion"],
+            })
 
     edges = [
         {
@@ -157,29 +172,6 @@ def main() -> None:
         """
         for batch in chunks(edges):
             write_batch(session, supply_query, batch)
-
-        location_links, description_links, category_links = [], [], []
-        model = metadata["model"]
-        for row in node_rows:
-            company_id = row["id"]
-            country = row["country"].strip()
-            description = row["products"]
-            category_id = row["product_category"].strip()
-            if country in locations:
-                location_links.append({"company": company_id, "label": country})
-            if description.strip():
-                description_id = hashlib.sha256(description.encode("utf-8")).hexdigest()
-                description_links.append({"company": company_id, "descriptionId": description_id})
-            if category_id in categories:
-                prediction = predictions[description.strip()]
-                category_links.append({
-                    "company": company_id,
-                    "categoryId": category_id,
-                    "score": float(prediction["score"]),
-                    "model": model,
-                    "modelRevision": metadata["modelRevision"],
-                    "taxonomyVersion": metadata["taxonomyVersion"],
-                })
 
         for query, rows in (
             ("UNWIND $rows AS row MATCH (c:AnonNetCompany {anonnetId: row.company}), (l:LocationLabel {label: row.label}) MERGE (c)-[:REPORTED_LOCATION]->(l)", location_links),

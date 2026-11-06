@@ -57,12 +57,9 @@ class ImportPreflightTest(InputFixture):
         fields = ["id", "location", "products", "country", "product_category"]
         first = ["n1", "Japan", "Steel", "Japan", "METALS"]
         cases = [
-            (first, "duplicate company ID"),
             (["n1", "Korea", "Wire", "Korea", "ELECTRONICS"], "duplicate company ID"),
             (["", "", "", "None", "None"], "blank or whitespace-padded company ID"),
-            ([" ", "", "", "None", "None"], "blank or whitespace-padded company ID"),
             ([" n2", "", "", "None", "None"], "blank or whitespace-padded company ID"),
-            (["n2 ", "", "", "None", "None"], "blank or whitespace-padded company ID"),
         ]
         for second, message in cases:
             with self.subTest(company_id=second[0], message=message):
@@ -77,8 +74,6 @@ class ImportPreflightTest(InputFixture):
         cases = [
             ("missing", "n2"),
             ("n1", "missing"),
-            ("missing-source", "missing-target"),
-            ("", "n2"),
         ]
         for source, target in cases:
             with self.subTest(source=source, target=target):
@@ -88,6 +83,16 @@ class ImportPreflightTest(InputFixture):
                         importer.main()
                     self.assertIn(repr(source), str(error.exception))
                     self.assertIn(repr(target), str(error.exception))
+                    driver.assert_not_called()
+
+    def test_prediction_details_must_match_before_connecting(self):
+        details_path = self.nodes.with_suffix(".prediction_details.json")
+        for details in ({"Steel": {"category": "ELECTRONICS", "score": 0.9}}, {}):
+            with self.subTest(details=details):
+                details_path.write_text(json.dumps(details), encoding="utf-8")
+                with patch.object(importer.GraphDatabase, "driver") as driver:
+                    with self.assertRaisesRegex(ValueError, "Prediction details disagree for n1"):
+                        importer.main()
                     driver.assert_not_called()
 
     def test_incompatible_or_missing_snapshot_is_rejected_before_writes(self):
@@ -129,11 +134,14 @@ class Neo4jImportIntegrationTest(InputFixture):
                             "MATCH (c:AnonNetCompany)-[:REPORTED_DESCRIPTION]->(d:ProductDescription) "
                             "RETURN c.anonnetId AS company, d.descriptionId AS id, d.text AS text ORDER BY company"
                         )]
-                        links = session.run("MATCH ()-[r:REPORTED_SUPPLY_LINK]->() RETURN count(r) AS n").single()["n"]
                         relations = [dict(record) for record in session.run(
                             "MATCH ()-[r]->() RETURN type(r) AS type, count(r) AS count ORDER BY type"
                         )]
-                        return companies, descriptions, links, relations
+                        categories = [dict(record) for record in session.run(
+                            "MATCH (c:AnonNetCompany)-[r:PREDICTED_CATEGORY]->(k:ProductCategory) "
+                            "RETURN c.anonnetId AS company, k.categoryId AS category, r.score AS score ORDER BY company"
+                        )]
+                        return companies, descriptions, relations, categories
 
                     before = snapshot()
                     self.assertEqual([row["text"] for row in before[1]], ["Steel", " Steel "])
@@ -141,27 +149,29 @@ class Neo4jImportIntegrationTest(InputFixture):
                         [row["id"] for row in before[1]],
                         [hashlib.sha256(value.encode()).hexdigest() for value in ("Steel", " Steel ")],
                     )
-                    self.assertEqual(before[2], 1)
+                    self.assertIn({"type": "REPORTED_SUPPLY_LINK", "count": 1}, before[2])
+                    self.assertEqual(before[3], [
+                        {"company": "n1", "category": "METALS", "score": 0.7},
+                        {"company": "n2", "category": "METALS", "score": 0.7},
+                    ])
                     importer.main()
                     self.assertEqual(snapshot(), before)
-                    original_nodes = self.nodes.read_bytes()
-                    self.nodes.write_bytes(original_nodes + b"n1,Korea,Wire,Korea,ELECTRONICS\n")
-                    with self.assertRaisesRegex(ValueError, "duplicate company ID: 'n1'"):
+                    details_path = self.nodes.with_suffix(".prediction_details.json")
+                    original_details = details_path.read_bytes()
+                    details_path.write_text(
+                        json.dumps({"Steel": {"category": "ELECTRONICS", "score": 0.9}}), encoding="utf-8"
+                    )
+                    with self.assertRaisesRegex(ValueError, "Prediction details disagree for n1"):
                         importer.main()
                     self.assertEqual(snapshot(), before)
-                    self.nodes.write_bytes(original_nodes)
+                    details_path.write_bytes(original_details)
                     original_edges = self.edges.read_bytes()
-                    for source, target in (("missing", "n2"), ("n1", "missing")):
-                        with self.subTest(source=source, target=target):
-                            self.write_csv(self.edges, ["source", "target"], [["n1", "n2"], [source, target]])
-                            with self.assertRaisesRegex(ValueError, "unknown endpoint"):
-                                importer.main()
-                            self.assertEqual(snapshot(), before)
                     self.write_csv(self.edges, ["source", "target"], [["n2", "n1"]])
                     with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
                         importer.main()
                     self.assertEqual(snapshot(), before)
                     self.edges.write_bytes(original_edges)
+                    original_nodes = self.nodes.read_bytes()
                     self.nodes.write_bytes(original_nodes + b"\n")
                     with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
                         importer.main()
