@@ -47,11 +47,8 @@ CATEGORIES = {
 
 
 def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+        return hashlib.file_digest(source, "sha256").hexdigest()
 
 
 def normalize_country(raw: str | None) -> str:
@@ -67,6 +64,7 @@ def classify(
     input_hash: str,
     checkpoint_path: Path,
 ):
+    """Resume matching predictions and classify remaining descriptions on MPS."""
     if not torch.backends.mps.is_available():
         raise RuntimeError("MPS is unavailable in this process; run outside a sandbox with Metal access.")
     if not MODEL_WEIGHTS.is_file():

@@ -14,10 +14,6 @@ import networkx as nx
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def digest(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 def read_rows(path: Path, columns: list[str]) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle, strict=True)
@@ -70,8 +66,6 @@ def build_graph(nodes_path: Path, edges_path: Path) -> nx.MultiDiGraph:
         category_model=metadata.get("model", "unknown"),
         category_model_revision=metadata.get("modelRevision", "unknown"),
         category_taxonomy_version=metadata.get("taxonomyVersion", "unknown"),
-        category_metadata_sha256=hashlib.sha256(metadata_path.read_bytes()).hexdigest() if metadata else "unavailable",
-        category_details_sha256=hashlib.sha256(details_path.read_bytes()).hexdigest() if details else "unavailable",
     )
     seen: set[str] = set()
     for row in nodes:
@@ -87,7 +81,7 @@ def build_graph(nodes_path: Path, edges_path: Path) -> nx.MultiDiGraph:
         if location.casefold() in {"none", "null", "unknown", "n/a", "na"}:
             location = ""
         if location:
-            location_id = f"location:{digest(location)}"
+            location_id = f"location:{location}"
             graph.add_node(location_id, kind="LocationLabel", label=location)
             graph.add_edge(company, location_id, key="location", relation="REPORTED_LOCATION",
                            source_file=nodes_path.name, raw_value=row["location"])
@@ -95,7 +89,7 @@ def build_graph(nodes_path: Path, edges_path: Path) -> nx.MultiDiGraph:
         # One raw CSV cell is one description. It may contain multiple products.
         description = row["products"]
         if description.strip():
-            product_id = f"description:{digest(description)}"
+            product_id = f"description:{description}"
             graph.add_node(product_id, kind="ProductDescription", label=description)
             graph.add_edge(company, product_id, key="description", relation="REPORTED_DESCRIPTION",
                            source_file=nodes_path.name, raw_value=description)

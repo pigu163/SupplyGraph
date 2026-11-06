@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 from collections import Counter, defaultdict, deque
 from pathlib import Path
@@ -78,8 +77,6 @@ def main() -> None:
             "truncationReason": "result_limit" if len(forward) > limit else None,
         },
         "n378SelfLoopRecord": edge_record["n378", "n378"],
-        "sourceSha256": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-                         for path in (NODE_FILE, EDGE_FILE)},
     }
     print(json.dumps(response, ensure_ascii=False, indent=2))
 

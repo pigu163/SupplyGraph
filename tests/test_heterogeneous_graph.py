@@ -50,7 +50,8 @@ class HeterogeneousGraphTest(unittest.TestCase):
         self.assertEqual((graph.number_of_nodes(), graph.number_of_edges()), (5, 8))
         locations = [n for n, d in graph.nodes(data=True) if d["kind"] == "LocationLabel"]
         products = [n for n, d in graph.nodes(data=True) if d["kind"] == "ProductDescription"]
-        self.assertEqual(len(locations), 1)
+        self.assertEqual(locations, ["location:Virgin Islands, British"])
+        self.assertEqual(products, ["description:Steel, Wire"])
         self.assertEqual(graph.nodes[locations[0]]["label"], "Virgin Islands, British")
         self.assertEqual(graph.nodes[products[0]]["label"], "Steel, Wire")
         self.assertEqual(graph.nodes["company:n2"]["location_raw"], " Virgin Islands, British ")

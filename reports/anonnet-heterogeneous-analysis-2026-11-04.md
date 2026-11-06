@@ -4,7 +4,7 @@
 
 ## 图如何构建
 
-使用 `networkx.MultiDiGraph`；节点 ID 有类型前缀，地点和产品描述节点使用完整文本的 SHA-256 作为稳定标识。
+使用 `networkx.MultiDiGraph`；节点 ID 有类型前缀，地点和产品描述节点使用对应文本作为标识。
 每个公司保留原始字段；地点标签使用节点文件的 `country` 列并去除首尾空格，边保留原始地点文本；产品描述保留整个原始 CSV 单元格，不按逗号拆分。
 缺失字段不建立未知共享节点。供应关系按 CSV 的 source → target 保存，业务上下游方向尚未证实；自连接、反向边和重复输入行均保留。
 
@@ -180,7 +180,7 @@ uv run python scripts/graph/analyze.py
 
 NetworkX 版本：3.7。节点文件 `nodes_anon_categorized.csv` SHA-256：`4303aabbae56c5fb5727963d05ea034836025f3ce56994b32c93d19f823f5aeb`；关系文件 SHA-256：`27a141f1ac38588dd30100c362936778248f9fa7cd96163637f81098c46f8088`。
 分类前节点文件 SHA-256：`38ef22d13fca6e3950f22748a395d8263fdd2a872e3b61dc776ca1c00b62a693`；原始节点字段与分类 CSV 逐行核对：通过。
-分类模型：`MoritzLaurer/deberta-v3-base-zeroshot-v2.0`；版本：`8e7e5af5983a0ddb1a5b45a38b129ab69e2258e8`；taxonomy：`1.0`。分类元数据 SHA-256：`0b103bfdf7cbf926a7b5560d4887028146772e6a98cb5c0e540f35ccf8736d3f`；分数明细 SHA-256：`3b9919ff9591b53b0e8c3b82cced895daf138bbb927e976a011bd8757bbd23cc`。
+分类模型：`MoritzLaurer/deberta-v3-base-zeroshot-v2.0`；版本：`8e7e5af5983a0ddb1a5b45a38b129ab69e2258e8`；taxonomy：`1.0`。
 图构建、GraphML 读取及分析结果均基于本地 CSV；脚本不修改源文件或数据库。
 
 NetworkX 官方说明：[二部图及节点集合](https://networkx.org/documentation/stable/reference/algorithms/bipartite.html) · [介数中心性](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.betweenness_centrality.html)。
