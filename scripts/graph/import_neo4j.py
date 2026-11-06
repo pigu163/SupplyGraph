@@ -61,7 +61,19 @@ def ensure_snapshot_compatible(session, snapshot_id: str) -> None:
 def main() -> None:
     node_rows = read_csv(NODES)
     edge_rows = read_csv(EDGES)
-    company_ids = {row["id"] for row in node_rows}
+    company_ids: set[str] = set()
+    for source_record, row in enumerate(node_rows, start=1):
+        company_id = row["id"]
+        if not company_id or company_id != company_id.strip():
+            raise ValueError(
+                f"{NODES}: data record {source_record}: "
+                f"blank or whitespace-padded company ID: {company_id!r}"
+            )
+        if company_id in company_ids:
+            raise ValueError(
+                f"{NODES}: data record {source_record}: duplicate company ID: {company_id!r}"
+            )
+        company_ids.add(company_id)
     for source_record, row in enumerate(edge_rows, start=1):
         source, target = row["source"], row["target"]
         if source not in company_ids or target not in company_ids:

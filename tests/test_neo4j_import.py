@@ -53,6 +53,26 @@ class InputFixture(unittest.TestCase):
 
 
 class ImportPreflightTest(InputFixture):
+    def test_invalid_company_ids_are_rejected_before_connecting(self):
+        fields = ["id", "location", "products", "country", "product_category"]
+        first = ["n1", "Japan", "Steel", "Japan", "METALS"]
+        cases = [
+            (first, "duplicate company ID"),
+            (["n1", "Korea", "Wire", "Korea", "ELECTRONICS"], "duplicate company ID"),
+            (["", "", "", "None", "None"], "blank or whitespace-padded company ID"),
+            ([" ", "", "", "None", "None"], "blank or whitespace-padded company ID"),
+            ([" n2", "", "", "None", "None"], "blank or whitespace-padded company ID"),
+            (["n2 ", "", "", "None", "None"], "blank or whitespace-padded company ID"),
+        ]
+        for second, message in cases:
+            with self.subTest(company_id=second[0], message=message):
+                self.write_csv(self.nodes, fields, [first, second])
+                with patch.object(importer.GraphDatabase, "driver") as driver:
+                    with self.assertRaisesRegex(ValueError, f"data record 2: {message}") as error:
+                        importer.main()
+                    self.assertIn(repr(second[0]), str(error.exception))
+                    driver.assert_not_called()
+
     def test_unknown_edge_endpoints_are_rejected_before_connecting(self):
         cases = [
             ("missing", "n2"),
@@ -102,14 +122,18 @@ class Neo4jImportIntegrationTest(InputFixture):
                 with driver.session(database="neo4j") as session:
                     def snapshot():
                         companies = [dict(record) for record in session.run(
-                            "MATCH (c:AnonNetCompany) RETURN c.anonnetId AS id, c.snapshotId AS snapshot ORDER BY id"
+                            "MATCH (c:AnonNetCompany) RETURN c.anonnetId AS id, c.snapshotId AS snapshot, "
+                            "c.locationRaw AS location, c.productsRaw AS products ORDER BY id"
                         )]
                         descriptions = [dict(record) for record in session.run(
                             "MATCH (c:AnonNetCompany)-[:REPORTED_DESCRIPTION]->(d:ProductDescription) "
                             "RETURN c.anonnetId AS company, d.descriptionId AS id, d.text AS text ORDER BY company"
                         )]
                         links = session.run("MATCH ()-[r:REPORTED_SUPPLY_LINK]->() RETURN count(r) AS n").single()["n"]
-                        return companies, descriptions, links
+                        relations = [dict(record) for record in session.run(
+                            "MATCH ()-[r]->() RETURN type(r) AS type, count(r) AS count ORDER BY type"
+                        )]
+                        return companies, descriptions, links, relations
 
                     before = snapshot()
                     self.assertEqual([row["text"] for row in before[1]], ["Steel", " Steel "])
@@ -120,6 +144,12 @@ class Neo4jImportIntegrationTest(InputFixture):
                     self.assertEqual(before[2], 1)
                     importer.main()
                     self.assertEqual(snapshot(), before)
+                    original_nodes = self.nodes.read_bytes()
+                    self.nodes.write_bytes(original_nodes + b"n1,Korea,Wire,Korea,ELECTRONICS\n")
+                    with self.assertRaisesRegex(ValueError, "duplicate company ID: 'n1'"):
+                        importer.main()
+                    self.assertEqual(snapshot(), before)
+                    self.nodes.write_bytes(original_nodes)
                     original_edges = self.edges.read_bytes()
                     for source, target in (("missing", "n2"), ("n1", "missing")):
                         with self.subTest(source=source, target=target):
@@ -132,7 +162,6 @@ class Neo4jImportIntegrationTest(InputFixture):
                         importer.main()
                     self.assertEqual(snapshot(), before)
                     self.edges.write_bytes(original_edges)
-                    original_nodes = self.nodes.read_bytes()
                     self.nodes.write_bytes(original_nodes + b"\n")
                     with self.assertRaisesRegex(ValueError, "different or unknown snapshot"):
                         importer.main()
