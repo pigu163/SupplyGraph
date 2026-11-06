@@ -13,6 +13,9 @@ import networkx as nx
 from networkx.algorithms import bipartite
 
 
+ROOT = Path(__file__).resolve().parents[2]
+
+
 def company_id(node: str) -> str:
     return node.removeprefix("company:")
 
@@ -31,12 +34,15 @@ def project(graph: nx.MultiDiGraph) -> tuple[nx.DiGraph, nx.Graph, nx.Graph]:
             locations.add_node(node, **data)
         elif data["kind"] == "ProductDescription":
             descriptions.add_node(node, **data)
+        elif data["kind"] == "ProductCategory":
+            pass  # Categories are analyzed separately from observed supply links.
         elif data["kind"] != "Company":
             raise ValueError(f"Unexpected node kind: {data['kind']}")
     expected = {
         "REPORTED_SUPPLY_LINK": ("Company", "Company"),
         "REPORTED_LOCATION": ("Company", "LocationLabel"),
         "REPORTED_DESCRIPTION": ("Company", "ProductDescription"),
+        "PREDICTED_CATEGORY": ("Company", "ProductCategory"),
     }
     for source, target, data in graph.edges(data=True):
         relation = data["relation"]
@@ -142,9 +148,80 @@ def analyze(graph: nx.MultiDiGraph, seed: int = 42, samples: int = 32, trials: i
         if example:
             break
 
+    # Categories are model predictions, not observed products or supply links.
+    categories = {}
+    for source, target, data in graph.edges(data=True):
+        if data["relation"] == "PREDICTED_CATEGORY":
+            if source in categories:
+                raise ValueError(f"Multiple category predictions for {source}")
+            categories[source] = graph.nodes[target]["label"]
+    grouped = {}
+    for company, category in categories.items():
+        grouped.setdefault(category, []).append(company)
+    category_rows = []
+    for category, members in sorted(grouped.items(), key=lambda item: (-len(item[1]), item[0])):
+        loc = Counter(company_location(c) for c in members if company_location(c) is not None)
+        member_degrees = [undirected.degree(c) for c in members]
+        scores = [float(graph.nodes[c]["category_score"]) for c in members if "category_score" in graph.nodes[c]]
+        category_rows.append({"category": category, "companies": len(members),
+                              "known_location": sum(loc.values()),
+                              "top_locations": sorted(loc.items(), key=lambda x: (-x[1], x[0]))[:3],
+                              "scored_companies": len(scores), "scores_below_0_3": sum(s < 0.3 for s in scores),
+                              "mean_undirected_degree": statistics.mean(member_degrees),
+                              "median_undirected_degree": statistics.median(member_degrees)})
+    category_pairs = Counter((categories[a], categories[b]) for a, b in supply.edges()
+                             if a != b and a in categories and b in categories)
+    category_edge_total = sum(category_pairs.values())
+    same_category = sum(count for (a, b), count in category_pairs.items() if a == b)
+    left_counts = Counter(); right_counts = Counter()
+    for (a, b), count in category_pairs.items():
+        left_counts[a] += count; right_counts[b] += count
+    mixing_by_source = []
+    for category, total in sorted(left_counts.items(), key=lambda item: (-item[1], item[0])):
+        targets = sorted(((b, count) for (a, b), count in category_pairs.items() if a == category),
+                         key=lambda item: (-item[1], item[0]))
+        mixing_by_source.append({"source_category": category, "eligible_edges": total,
+                                 "same_category_edges": category_pairs[category, category],
+                                 "top_target_category": targets[0][0], "top_target_edges": targets[0][1]})
+    marginal_baseline = (sum(left_counts[c] * right_counts[c] for c in grouped) / category_edge_total**2
+                         if category_edge_total else 0.0)
+    scored = {c: float(graph.nodes[c]["category_score"]) for c in categories
+              if "category_score" in graph.nodes[c]}
+    unique_scores = {}
+    for company, score in scored.items():
+        text = graph.nodes[company]["products_raw"].strip()
+        if text in unique_scores and unique_scores[text] != score:
+            raise ValueError(f"Conflicting scores for description: {text}")
+        unique_scores[text] = score
+    category_example = None
+    for category, members in sorted(grouped.items(), key=lambda item: (-len(item[1]), item[0])):
+        candidates = sorted(members)
+        for i, left in enumerate(candidates):
+            for right in candidates[i + 1:]:
+                a, b = company_location(left), company_location(right)
+                if a and b and a != b and not supply.has_edge(left, right) and not supply.has_edge(right, left):
+                    category_example = {"category": category, "company_a": company_id(left), "location_a": a,
+                                        "description_a": graph.nodes[left]["products_raw"],
+                                        "company_b": company_id(right), "location_b": b,
+                                        "description_b": graph.nodes[right]["products_raw"]}
+                    break
+            if category_example:
+                break
+        if category_example:
+            break
+
     return {
         "networkx_version": nx.__version__,
-        "source_hashes": {"nodes_sha256": graph.graph["nodes_sha256"], "edges_sha256": graph.graph["edges_sha256"]},
+        "source_hashes": {"nodes_sha256": graph.graph["nodes_sha256"], "edges_sha256": graph.graph["edges_sha256"],
+                          "nodes_file": graph.graph.get("nodes_file", "unknown"),
+                          "node_input_kind": graph.graph.get("node_input_kind", "raw"),
+                          "raw_nodes_sha256": graph.graph.get("raw_nodes_sha256", "unknown"),
+                          "raw_nodes_verified": graph.graph.get("raw_nodes_verified", False),
+                          "category_metadata_sha256": graph.graph.get("category_metadata_sha256", "unavailable"),
+                          "category_details_sha256": graph.graph.get("category_details_sha256", "unavailable")},
+        "category_provenance": {"model": graph.graph.get("category_model", "unknown"),
+                                "revision": graph.graph.get("category_model_revision", "unknown"),
+                                "taxonomy_version": graph.graph.get("category_taxonomy_version", "unknown")},
         "heterogeneous": {"nodes": graph.number_of_nodes(), "edges": graph.number_of_edges(),
                           "node_types": dict(node_counts), "edge_types": dict(edge_counts),
                           "location_layer_is_bipartite": bipartite.is_bipartite(locations),
@@ -169,6 +246,19 @@ def analyze(graph: nx.MultiDiGraph, seed: int = 42, samples: int = 32, trials: i
                          "exact_text_groups_with_two_known_location_labels": len(cross_location),
                          "top": [(descriptions.nodes[n]["label"], descriptions.degree(n)) for n in ranked_descriptions[:10]],
                          "example_two_hop_path": example},
+        "predicted_categories": {"companies_with_category": len(categories),
+                                 "companies_without_category": len(supply) - len(categories),
+                                 "categories": category_rows,
+                                 "known_category_nonself_supply_edges": category_edge_total,
+                                 "same_category_edges": same_category,
+                                 "expected_same_category_from_endpoint_marginals": marginal_baseline,
+                                 "mixing_by_source_category": mixing_by_source,
+                                 "top_directed_category_pairs": [(a, b, count) for (a, b), count in
+                                     sorted(category_pairs.items(), key=lambda item: (-item[1], item[0]))[:10]],
+                                 "scored_companies": len(scored), "unique_scored_descriptions": len(unique_scores),
+                                 "company_scores_below_0_3": sum(s < 0.3 for s in scored.values()),
+                                 "unique_scores_below_0_3": sum(s < 0.3 for s in unique_scores.values()),
+                                 "example_same_category_cross_location": category_example},
         "failure_experiment": {"projection": "company-only undirected simple graph; self-loops removed",
                                "failure_count": num_failed, "survivors": len(undirected) - num_failed,
                                "target_strategy": "highest original undirected degree, fixed ranking",
@@ -187,24 +277,30 @@ def escape(value: object) -> str:
 
 def render_report(result: dict, graph_path: Path) -> str:
     h, s, l, d, f = (result[k] for k in ("heterogeneous", "supply", "locations", "descriptions", "failure_experiment"))
+    c = result["predicted_categories"]
+    categorized_input = result['source_hashes']['node_input_kind'] == 'categorized'
+    location_source = '`country`' if categorized_input else '`location`'
     total = s["nodes"]
     known_edges = l["non_self_supply_edges_with_both_locations"]
     survivors = f["survivors"]
     out = [
         "# AnonNet 异质图：NetworkX 构建与分析", "",
-        "数据来源：本地 AnonNet CSV；源网络快照产生日期未知。分析不连接 Neo4j。", "",
+        ("数据来源：本地 AnonNet 分类 CSV 与原始关系 CSV；源网络快照产生日期未知。分析不连接 Neo4j。"
+         if categorized_input else "数据来源：本地 AnonNet 原始节点与关系 CSV；源网络快照产生日期未知。分析不连接 Neo4j。"), "",
         "## 图如何构建", "",
         "使用 `networkx.MultiDiGraph`；节点 ID 有类型前缀，地点和产品描述节点使用完整文本的 SHA-256 作为稳定标识。",
-        "每个公司保留原始字段；地点标签仅去除首尾空格，边保留原始地点文本；产品描述保留整个原始 CSV 单元格，不按逗号拆分。",
+        f"每个公司保留原始字段；地点标签使用节点文件的 {location_source} 列并去除首尾空格，边保留原始地点文本；产品描述保留整个原始 CSV 单元格，不按逗号拆分。",
         "缺失字段不建立未知共享节点。供应关系按 CSV 的 source → target 保存，业务上下游方向尚未证实；自连接、反向边和重复输入行均保留。", "",
         "| 节点类型 | 数量 | 含义 |", "|---|---:|---|",
         f"| Company | {h['node_types'].get('Company', 0):,} | 匿名公司 |",
-        f"| LocationLabel | {h['node_types'].get('LocationLabel', 0):,} | 去除首尾空格后的原始地点标签 |",
-        f"| ProductDescription | {h['node_types'].get('ProductDescription', 0):,} | 整个原始产品字段，不是单个标准产品 |", "",
+        f"| LocationLabel | {h['node_types'].get('LocationLabel', 0):,} | {location_source} 文本标签 |",
+        f"| ProductDescription | {h['node_types'].get('ProductDescription', 0):,} | 整个原始产品字段，不是单个标准产品 |",
+        f"| ProductCategory | {h['node_types'].get('ProductCategory', 0):,} | 模型预测类别，不是已核实产品 |", "",
         "| 关系类型 | 数量 | 含义 |", "|---|---:|---|",
         f"| REPORTED_SUPPLY_LINK | {h['edge_types'].get('REPORTED_SUPPLY_LINK', 0):,} | 公司 → 公司，保留文件方向 |",
         f"| REPORTED_LOCATION | {h['edge_types'].get('REPORTED_LOCATION', 0):,} | 公司 → 地点标签 |",
-        f"| REPORTED_DESCRIPTION | {h['edge_types'].get('REPORTED_DESCRIPTION', 0):,} | 公司 → 产品描述原文 |", "",
+        f"| REPORTED_DESCRIPTION | {h['edge_types'].get('REPORTED_DESCRIPTION', 0):,} | 公司 → 产品描述原文 |",
+        f"| PREDICTED_CATEGORY | {h['edge_types'].get('PREDICTED_CATEGORY', 0):,} | 公司 → 模型预测类别；不表示供应关系 |", "",
         f"合计 **{h['nodes']:,} 节点、{h['edges']:,} 条关系**。GraphML 文件为 `{graph_path}`；它由原始数据生成，保存在 Git 忽略的 `dataset/derived/` 下。", "",
         "## 方法与结果", "",
         "### 1. 公司间网络的结构", "",
@@ -221,7 +317,7 @@ def render_report(result: dict, graph_path: Path) -> str:
     common_top = len({n for n, _ in s["top_undirected_degree"][:5]} & {n for n, _ in s["sampled_betweenness"]["top"][:5]})
     out += ["", f"连接数与抽样介数的前五名有 {common_top} 家重合；它们衡量不同结构特征，介数排名还受抽样影响。"]
     out += ["", "### 2. 地点标签与公司关系", "",
-            f"公司—地点子图为二部图：{l['companies_with_label']:,}/{total:,} 家公司有标签，涉及 {l['labels']} 个不同标签。去除首尾空格后，出现最多的标签如下：", "",
+            f"公司—地点子图为二部图：{l['companies_with_label']:,}/{total:,} 家公司有标签，涉及 {l['labels']} 个不同标签。来自 {location_source} 列、去除首尾空格后，出现最多的标签如下：", "",
             "| 地点标签 | 公司数 |", "|---|---:|"]
     out += [f"| {escape(label)} | {count:,} |" for label, count in l["top"][:5]]
     out += ["", f"在排除自连接的公司关系中，**{known_edges:,}** 条关系两端都有地点标签；其中 **{l['same_location_edges']:,}** 条（{l['same_location_edges'] / known_edges * 100 if known_edges else 0:.2f}%）标签相同，**{l['different_location_edges']:,}** 条标签不同。分母仅为双方地点均已知的有向关系行；反向关系分别计数，未知地点不算同地也不算异地。",
@@ -238,7 +334,47 @@ def render_report(result: dict, graph_path: Path) -> str:
                 f"`{escape(example['description'])}` — `{escape(example['company_b'])}`（{escape(example['location_b'])}）。"
                 "这是公司—相同原文—公司两跳路径，两个公司之间在原始公司关系中没有直接边。",
                 "相同完整描述只是候选线索，不能证明它们生产相同规格、存在交易关系或可以相互替代。"]
-    out += ["", "### 4. 结构性故障实验：静态度数定向 vs 随机", "",
+    out += ["", "### 4. 模型预测类别：覆盖、地点与网络结构", "",
+            f"{c['companies_with_category']:,}/{total:,} 家公司有预测类别；{c['companies_without_category']:,} 家没有。每条非空描述被强制分配一个 top-1 类别，模型并未验证类别正确性。", "",
+            "| 预测类别 | 公司数 | 已知地点标签公司数 | 最常见地点标签（公司数） | 无向邻居数均值 | 中位数 | 相对分低于 0.3 / 有分数 |",
+            "|---|---:|---:|---|---:|---:|---:|"]
+    out += [f"| {escape(row['category'])} | {row['companies']:,} | {row['known_location']:,} | "
+            f"{escape(', '.join(f'{name}: {count}' for name, count in row['top_locations']))} | "
+            f"{row['mean_undirected_degree']:.2f} | {row['median_undirected_degree']:.1f} | {row['scores_below_0_3']:,}/{row['scored_companies']:,} |"
+            for row in c['categories']]
+    eligible = c['known_category_nonself_supply_edges']
+    same = c['same_category_edges']
+    out += ["", f"按公司间有向简单图统计，排除自连接后，两端类别均已知的关系有 **{eligible:,}** 条；"
+            f"其中同类别 **{same:,}** 条（{same / eligible * 100 if eligible else 0:.2f}%）。"
+            f"按这些边的 source/target 类别边际频率独立配对得到的描述性参照为 {c['expected_same_category_from_endpoint_marginals'] * 100:.2f}%；"
+            "这不是随机置换检验，也不控制公司度数或抽样偏差。反向边分别计数，未知类别不参与分母。", "",
+            "| 文件 source 类别 | 文件 target 类别 | 关系数 |", "|---|---|---:|"]
+    out += [f"| {escape(a)} | {escape(b)} | {n:,} |" for a, b, n in c['top_directed_category_pairs']]
+    out += ["", "按文件 source 类别分组，下表分母为该类别指向类别已知目标的非自连接关系数；"
+            "百分比用于描述该文件方向的结构，不能解释成真实供货比例。", "",
+            "| source 类别 | 符合条件的关系 | 同类别关系 | 同类别占比 | 最常见 target 类别（关系数） |",
+            "|---|---:|---:|---:|---|"]
+    out += [f"| {escape(row['source_category'])} | {row['eligible_edges']:,} | {row['same_category_edges']:,} | "
+            f"{row['same_category_edges']/row['eligible_edges']*100:.2f}% | "
+            f"{escape(row['top_target_category'])} ({row['top_target_edges']:,}) |"
+            for row in c['mixing_by_source_category']]
+    out += ["", f"预测明细中有 {c['unique_scored_descriptions']:,} 条不同描述的分数（对应 {c['scored_companies']:,} 家公司）；"
+            f"其中最高相对分低于 0.3 的分别有 {c['unique_scores_below_0_3']:,} 条描述、{c['company_scores_below_0_3']:,} 家公司。"
+            "0.3 只是用于统计可能需要复核样本的探索阈值，不是经过标注验证的置信阈值；分数不是校准概率。"]
+    review_groups = [row for row in c['categories'] if row['scored_companies'] >= 20
+                     and row['scores_below_0_3'] / row['scored_companies'] >= 0.75]
+    if review_groups:
+        out += ["", "低分占比较高的类别（仅列有分数公司至少 20 家、低分占比至少 75% 的类别）：" +
+                "；".join(f"`{escape(row['category'])}` {row['scores_below_0_3']}/{row['scored_companies']}"
+                         f"（{row['scores_below_0_3']/row['scored_companies']*100:.1f}%）" for row in review_groups) +
+                "。这些类别适合优先抽样复核，不能仅凭分数认定预测错误。"]
+    ce = c['example_same_category_cross_location']
+    if ce:
+        out += ["", f"示例：`{escape(ce['company_a'])}`（{escape(ce['location_a'])}，`{escape(ce['description_a'])}`）与 "
+                f"`{escape(ce['company_b'])}`（{escape(ce['location_b'])}，`{escape(ce['description_b'])}`）"
+                f"共同连接预测类别 `{escape(ce['category'])}`，两公司间没有直接供应边。"
+                "共同类别与地点差异只提供候选检索线索，不证明产品兼容、实际供货或替代可行。"]
+    out += ["", "### 5. 结构性故障实验：静态度数定向 vs 随机", "",
             f"在仅含公司关系、已移除自连接的无向简单图上，同时移除 {f['failure_count']} 家公司（约 1%）；"
             "定向组使用原图无向连接数最高的固定排序，随机组不放回抽样。"
             f"随机组重复 {f['random_trials']} 次，种子 {f['seed']}；每次剩余 {survivors:,} 个节点。", "",
@@ -250,13 +386,18 @@ def render_report(result: dict, graph_path: Path) -> str:
             "## 解释边界与后续", "",
             "- `source → target` 的供应商/客户含义仍待数据提供方说明；因此入度、出度和有向路径不标注上下游业务角色。",
             "- `ProductDescription` 是原始文本字段，不等同于单个产品；相同地点或描述创建的两跳路径也不是新增供应关系。",
+            "- `ProductCategory` 是模型的单标签预测，类别混合了产品和服务；分数未经校准，类别未进行人工准确率评估。类别节点只用于类别分析，绝不参与供应网络投影和故障实验。",
             "- 地点、产品缺失分别影响地理比较与描述匹配；地点字段不代表公司全部工厂和运营地。",
             "- 本次使用 NetworkX，未将图导入 Neo4j，也未运行 GDS。后续若映射到 Neo4j，应先核对版本、目标数据库现状、投影方向和源字段语义。", "",
             "## 复现", "",
-            "```bash", "uv sync --locked", "uv run python scripts/graph_construct/construct.py",
-            "uv run python scripts/graph_construct/analyze.py", "```", "",
-            f"NetworkX 版本：{result['networkx_version']}。节点文件 SHA-256：`{result['source_hashes']['nodes_sha256']}`；"
+            "```bash", "uv sync --locked", "uv run python scripts/graph/construct.py",
+            "uv run python scripts/graph/analyze.py", "```", "",
+            f"NetworkX 版本：{result['networkx_version']}。节点文件 `{result['source_hashes']['nodes_file']}` SHA-256：`{result['source_hashes']['nodes_sha256']}`；"
             f"关系文件 SHA-256：`{result['source_hashes']['edges_sha256']}`。",
+            f"分类前节点文件 SHA-256：`{result['source_hashes']['raw_nodes_sha256']}`；"
+            f"原始节点字段与分类 CSV 逐行核对：{'通过' if result['source_hashes']['raw_nodes_verified'] else '未核对（原始文件或来源元数据不可用）'}。",
+            f"分类模型：`{result['category_provenance']['model']}`；版本：`{result['category_provenance']['revision']}`；taxonomy：`{result['category_provenance']['taxonomy_version']}`。"
+            f"分类元数据 SHA-256：`{result['source_hashes']['category_metadata_sha256']}`；分数明细 SHA-256：`{result['source_hashes']['category_details_sha256']}`。",
             "图构建、GraphML 读取及分析结果均基于本地 CSV；脚本不修改源文件或数据库。", "",
             "NetworkX 官方说明：[二部图及节点集合](https://networkx.org/documentation/stable/reference/algorithms/bipartite.html) · "
             "[介数中心性](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.centrality.betweenness_centrality.html)。", ""]
@@ -265,8 +406,12 @@ def render_report(result: dict, graph_path: Path) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--graph", type=Path, default=Path("dataset/derived/anonnet-heterogeneous.graphml"))
-    parser.add_argument("--report-dir", type=Path, default=Path("report"))
+    parser.add_argument(
+        "--graph",
+        type=Path,
+        default=ROOT / "dataset/derived/anonnet-heterogeneous-categorized.graphml",
+    )
+    parser.add_argument("--report-dir", type=Path, default=ROOT / "reports")
     args = parser.parse_args()
     graph = nx.read_graphml(args.graph, force_multigraph=True)
     result = analyze(graph)

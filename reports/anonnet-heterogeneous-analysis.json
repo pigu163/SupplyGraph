@@ -1,0 +1,903 @@
+{
+  "networkx_version": "3.7",
+  "source_hashes": {
+    "nodes_sha256": "4303aabbae56c5fb5727963d05ea034836025f3ce56994b32c93d19f823f5aeb",
+    "edges_sha256": "27a141f1ac38588dd30100c362936778248f9fa7cd96163637f81098c46f8088",
+    "nodes_file": "nodes_anon_categorized.csv",
+    "node_input_kind": "categorized",
+    "raw_nodes_sha256": "38ef22d13fca6e3950f22748a395d8263fdd2a872e3b61dc776ca1c00b62a693",
+    "raw_nodes_verified": true,
+    "category_metadata_sha256": "0b103bfdf7cbf926a7b5560d4887028146772e6a98cb5c0e540f35ccf8736d3f",
+    "category_details_sha256": "3b9919ff9591b53b0e8c3b82cced895daf138bbb927e976a011bd8757bbd23cc"
+  },
+  "category_provenance": {
+    "model": "MoritzLaurer/deberta-v3-base-zeroshot-v2.0",
+    "revision": "8e7e5af5983a0ddb1a5b45a38b129ab69e2258e8",
+    "taxonomy_version": "1.0"
+  },
+  "heterogeneous": {
+    "nodes": 11070,
+    "edges": 63097,
+    "node_types": {
+      "Company": 7245,
+      "LocationLabel": 102,
+      "ProductDescription": 3706,
+      "ProductCategory": 17
+    },
+    "edge_types": {
+      "REPORTED_LOCATION": 5755,
+      "REPORTED_DESCRIPTION": 6708,
+      "PREDICTED_CATEGORY": 6708,
+      "REPORTED_SUPPLY_LINK": 43926
+    },
+    "location_layer_is_bipartite": true,
+    "description_layer_is_bipartite": true
+  },
+  "supply": {
+    "nodes": 7245,
+    "unique_ordered_edges": 43926,
+    "source_rows_collapsed_in_simple_projection": 0,
+    "self_loops_excluded_from_undirected_analyses": 4,
+    "weak_components": 1,
+    "largest_strong_component": 3871,
+    "undirected_edges_excluding_self_loops": 41063,
+    "articulation_points": 419,
+    "top_source_degree": [
+      [
+        "n4859",
+        483
+      ],
+      [
+        "n6013",
+        418
+      ],
+      [
+        "n6000",
+        380
+      ],
+      [
+        "n3856",
+        362
+      ],
+      [
+        "n4229",
+        354
+      ],
+      [
+        "n6980",
+        327
+      ],
+      [
+        "n2824",
+        294
+      ],
+      [
+        "n4238",
+        282
+      ],
+      [
+        "n6689",
+        242
+      ],
+      [
+        "n693",
+        212
+      ]
+    ],
+    "top_undirected_degree": [
+      [
+        "n4859",
+        499
+      ],
+      [
+        "n5063",
+        459
+      ],
+      [
+        "n6013",
+        455
+      ],
+      [
+        "n6978",
+        396
+      ],
+      [
+        "n6000",
+        388
+      ],
+      [
+        "n3856",
+        382
+      ],
+      [
+        "n4229",
+        362
+      ],
+      [
+        "n1854",
+        348
+      ],
+      [
+        "n6980",
+        346
+      ],
+      [
+        "n5964",
+        312
+      ]
+    ],
+    "sampled_betweenness": {
+      "k": 32,
+      "seed": 42,
+      "normalized": true,
+      "top": [
+        [
+          "n6195",
+          0.053346000655844966
+        ],
+        [
+          "n6301",
+          0.04924836636950962
+        ],
+        [
+          "n5063",
+          0.04601070353467842
+        ],
+        [
+          "n6956",
+          0.0411168527158738
+        ],
+        [
+          "n6978",
+          0.03939737861336726
+        ],
+        [
+          "n2984",
+          0.036678066973297195
+        ],
+        [
+          "n4562",
+          0.03496903702472128
+        ],
+        [
+          "n2396",
+          0.034877254823939635
+        ],
+        [
+          "n3909",
+          0.03456638323848695
+        ],
+        [
+          "n6756",
+          0.0343382620459278
+        ]
+      ]
+    }
+  },
+  "locations": {
+    "labels": 102,
+    "companies_with_label": 5755,
+    "top": [
+      [
+        "Japan",
+        1099
+      ],
+      [
+        "China",
+        1086
+      ],
+      [
+        "United States",
+        720
+      ],
+      [
+        "South Korea",
+        481
+      ],
+      [
+        "Taiwan",
+        300
+      ],
+      [
+        "India",
+        249
+      ],
+      [
+        "Germany",
+        154
+      ],
+      [
+        "Indonesia",
+        129
+      ],
+      [
+        "United Kingdom",
+        119
+      ],
+      [
+        "Australia",
+        106
+      ]
+    ],
+    "non_self_supply_edges_with_both_locations": 33098,
+    "same_location_edges": 15900,
+    "different_location_edges": 17198
+  },
+  "descriptions": {
+    "unique_raw_cells": 3706,
+    "companies_with_description": 6708,
+    "exact_text_groups_at_least_two_companies": 462,
+    "exact_text_groups_with_two_known_location_labels": 333,
+    "top": [
+      [
+        "Asset Management",
+        188
+      ],
+      [
+        "Steel",
+        115
+      ],
+      [
+        "Industrial Support Services",
+        108
+      ],
+      [
+        "Software",
+        78
+      ],
+      [
+        "Various power semiconductor devices for Power ECU Part of Vehicle",
+        72
+      ],
+      [
+        "Chemical grade alumina",
+        67
+      ],
+      [
+        "Electronics/Electric Parts Part of Vehicle",
+        55
+      ],
+      [
+        "Various Motor Part of Vehicle",
+        55
+      ],
+      [
+        "Household Products",
+        54
+      ],
+      [
+        "Fertilizer",
+        53
+      ]
+    ],
+    "example_two_hop_path": {
+      "company_a": "n1085",
+      "location_a": "Indonesia",
+      "description": "Asset Management",
+      "company_b": "n1131",
+      "location_b": "South Korea",
+      "typed_path_hops": 2,
+      "direct_supply_edge_either_direction": false
+    }
+  },
+  "predicted_categories": {
+    "companies_with_category": 6708,
+    "companies_without_category": 537,
+    "categories": [
+      {
+        "category": "METALS",
+        "companies": 1555,
+        "known_location": 1208,
+        "top_locations": [
+          [
+            "China",
+            285
+          ],
+          [
+            "Japan",
+            240
+          ],
+          [
+            "South Korea",
+            116
+          ]
+        ],
+        "scored_companies": 1555,
+        "scores_below_0_3": 254,
+        "mean_undirected_degree": 10.678456591639872,
+        "median_undirected_degree": 3
+      },
+      {
+        "category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "companies": 1443,
+        "known_location": 1285,
+        "top_locations": [
+          [
+            "Japan",
+            250
+          ],
+          [
+            "China",
+            212
+          ],
+          [
+            "United States",
+            183
+          ]
+        ],
+        "scored_companies": 1443,
+        "scores_below_0_3": 206,
+        "mean_undirected_degree": 13.338184338184337,
+        "median_undirected_degree": 3
+      },
+      {
+        "category": "ELECTRONICS",
+        "companies": 869,
+        "known_location": 751,
+        "top_locations": [
+          [
+            "Japan",
+            160
+          ],
+          [
+            "China",
+            119
+          ],
+          [
+            "United States",
+            96
+          ]
+        ],
+        "scored_companies": 869,
+        "scores_below_0_3": 225,
+        "mean_undirected_degree": 10.71921749136939,
+        "median_undirected_degree": 3
+      },
+      {
+        "category": "CHEMICALS",
+        "companies": 626,
+        "known_location": 416,
+        "top_locations": [
+          [
+            "China",
+            104
+          ],
+          [
+            "Japan",
+            76
+          ],
+          [
+            "United States",
+            40
+          ]
+        ],
+        "scored_companies": 626,
+        "scores_below_0_3": 116,
+        "mean_undirected_degree": 12.357827476038338,
+        "median_undirected_degree": 4.0
+      },
+      {
+        "category": "ENERGY_FUELS",
+        "companies": 422,
+        "known_location": 332,
+        "top_locations": [
+          [
+            "China",
+            99
+          ],
+          [
+            "United States",
+            54
+          ],
+          [
+            "Japan",
+            26
+          ]
+        ],
+        "scored_companies": 422,
+        "scores_below_0_3": 86,
+        "mean_undirected_degree": 16.829383886255926,
+        "median_undirected_degree": 5.0
+      },
+      {
+        "category": "PLASTICS_RUBBER",
+        "companies": 384,
+        "known_location": 343,
+        "top_locations": [
+          [
+            "Japan",
+            83
+          ],
+          [
+            "United States",
+            49
+          ],
+          [
+            "China",
+            42
+          ]
+        ],
+        "scored_companies": 384,
+        "scores_below_0_3": 350,
+        "mean_undirected_degree": 10.276041666666666,
+        "median_undirected_degree": 2.0
+      },
+      {
+        "category": "FINANCIAL_SERVICES",
+        "companies": 333,
+        "known_location": 295,
+        "top_locations": [
+          [
+            "United States",
+            54
+          ],
+          [
+            "China",
+            28
+          ],
+          [
+            "Japan",
+            23
+          ]
+        ],
+        "scored_companies": 333,
+        "scores_below_0_3": 20,
+        "mean_undirected_degree": 11.912912912912914,
+        "median_undirected_degree": 4
+      },
+      {
+        "category": "BUSINESS_SERVICES",
+        "companies": 262,
+        "known_location": 226,
+        "top_locations": [
+          [
+            "Japan",
+            49
+          ],
+          [
+            "China",
+            28
+          ],
+          [
+            "South Korea",
+            22
+          ]
+        ],
+        "scored_companies": 262,
+        "scores_below_0_3": 15,
+        "mean_undirected_degree": 13.248091603053435,
+        "median_undirected_degree": 4.0
+      },
+      {
+        "category": "MACHINERY_EQUIPMENT",
+        "companies": 237,
+        "known_location": 200,
+        "top_locations": [
+          [
+            "Japan",
+            67
+          ],
+          [
+            "China",
+            35
+          ],
+          [
+            "United States",
+            28
+          ]
+        ],
+        "scored_companies": 237,
+        "scores_below_0_3": 89,
+        "mean_undirected_degree": 8.708860759493671,
+        "median_undirected_degree": 3
+      },
+      {
+        "category": "SOFTWARE_IT",
+        "companies": 205,
+        "known_location": 152,
+        "top_locations": [
+          [
+            "United States",
+            41
+          ],
+          [
+            "China",
+            24
+          ],
+          [
+            "Japan",
+            17
+          ]
+        ],
+        "scored_companies": 205,
+        "scores_below_0_3": 35,
+        "mean_undirected_degree": 11.395121951219512,
+        "median_undirected_degree": 2
+      },
+      {
+        "category": "FORESTRY_PAPER",
+        "companies": 103,
+        "known_location": 81,
+        "top_locations": [
+          [
+            "Japan",
+            22
+          ],
+          [
+            "China",
+            14
+          ],
+          [
+            "United States",
+            11
+          ]
+        ],
+        "scored_companies": 103,
+        "scores_below_0_3": 6,
+        "mean_undirected_degree": 14.155339805825243,
+        "median_undirected_degree": 4
+      },
+      {
+        "category": "MINERALS_BUILDING",
+        "companies": 92,
+        "known_location": 74,
+        "top_locations": [
+          [
+            "China",
+            15
+          ],
+          [
+            "Japan",
+            7
+          ],
+          [
+            "Indonesia",
+            6
+          ]
+        ],
+        "scored_companies": 92,
+        "scores_below_0_3": 12,
+        "mean_undirected_degree": 7.608695652173913,
+        "median_undirected_degree": 2.0
+      },
+      {
+        "category": "AGRICULTURE_FOOD",
+        "companies": 77,
+        "known_location": 61,
+        "top_locations": [
+          [
+            "Japan",
+            18
+          ],
+          [
+            "China",
+            15
+          ],
+          [
+            "United States",
+            11
+          ]
+        ],
+        "scored_companies": 77,
+        "scores_below_0_3": 9,
+        "mean_undirected_degree": 7.285714285714286,
+        "median_undirected_degree": 3
+      },
+      {
+        "category": "HEALTHCARE_PRODUCTS",
+        "companies": 51,
+        "known_location": 42,
+        "top_locations": [
+          [
+            "China",
+            7
+          ],
+          [
+            "Japan",
+            5
+          ],
+          [
+            "United States",
+            5
+          ]
+        ],
+        "scored_companies": 51,
+        "scores_below_0_3": 51,
+        "mean_undirected_degree": 6.0588235294117645,
+        "median_undirected_degree": 3
+      },
+      {
+        "category": "ELECTRICAL_EQUIPMENT",
+        "companies": 22,
+        "known_location": 20,
+        "top_locations": [
+          [
+            "China",
+            4
+          ],
+          [
+            "United States",
+            4
+          ],
+          [
+            "Canada",
+            2
+          ]
+        ],
+        "scored_companies": 22,
+        "scores_below_0_3": 5,
+        "mean_undirected_degree": 11.909090909090908,
+        "median_undirected_degree": 4.5
+      },
+      {
+        "category": "TEXTILES_APPAREL",
+        "companies": 20,
+        "known_location": 17,
+        "top_locations": [
+          [
+            "Japan",
+            7
+          ],
+          [
+            "China",
+            3
+          ],
+          [
+            "South Korea",
+            2
+          ]
+        ],
+        "scored_companies": 20,
+        "scores_below_0_3": 4,
+        "mean_undirected_degree": 10.5,
+        "median_undirected_degree": 3.5
+      },
+      {
+        "category": "LOGISTICS_SERVICES",
+        "companies": 7,
+        "known_location": 6,
+        "top_locations": [
+          [
+            "China",
+            2
+          ],
+          [
+            "Japan",
+            2
+          ],
+          [
+            "Sweden",
+            1
+          ]
+        ],
+        "scored_companies": 7,
+        "scores_below_0_3": 4,
+        "mean_undirected_degree": 4.142857142857143,
+        "median_undirected_degree": 2
+      }
+    ],
+    "known_category_nonself_supply_edges": 40903,
+    "same_category_edges": 8325,
+    "expected_same_category_from_endpoint_marginals": 0.1416358870873475,
+    "mixing_by_source_category": [
+      {
+        "source_category": "METALS",
+        "eligible_edges": 8997,
+        "same_category_edges": 2614,
+        "top_target_category": "METALS",
+        "top_target_edges": 2614
+      },
+      {
+        "source_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "eligible_edges": 8841,
+        "same_category_edges": 3401,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 3401
+      },
+      {
+        "source_category": "ELECTRONICS",
+        "eligible_edges": 5123,
+        "same_category_edges": 707,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 1410
+      },
+      {
+        "source_category": "ENERGY_FUELS",
+        "eligible_edges": 4882,
+        "same_category_edges": 446,
+        "top_target_category": "METALS",
+        "top_target_edges": 1100
+      },
+      {
+        "source_category": "CHEMICALS",
+        "eligible_edges": 3898,
+        "same_category_edges": 708,
+        "top_target_category": "METALS",
+        "top_target_edges": 820
+      },
+      {
+        "source_category": "FINANCIAL_SERVICES",
+        "eligible_edges": 1953,
+        "same_category_edges": 111,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 506
+      },
+      {
+        "source_category": "PLASTICS_RUBBER",
+        "eligible_edges": 1877,
+        "same_category_edges": 93,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 478
+      },
+      {
+        "source_category": "BUSINESS_SERVICES",
+        "eligible_edges": 1868,
+        "same_category_edges": 123,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 409
+      },
+      {
+        "source_category": "SOFTWARE_IT",
+        "eligible_edges": 1043,
+        "same_category_edges": 50,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 340
+      },
+      {
+        "source_category": "MACHINERY_EQUIPMENT",
+        "eligible_edges": 962,
+        "same_category_edges": 25,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 288
+      },
+      {
+        "source_category": "FORESTRY_PAPER",
+        "eligible_edges": 614,
+        "same_category_edges": 21,
+        "top_target_category": "METALS",
+        "top_target_edges": 165
+      },
+      {
+        "source_category": "MINERALS_BUILDING",
+        "eligible_edges": 274,
+        "same_category_edges": 20,
+        "top_target_category": "METALS",
+        "top_target_edges": 91
+      },
+      {
+        "source_category": "AGRICULTURE_FOOD",
+        "eligible_edges": 221,
+        "same_category_edges": 4,
+        "top_target_category": "METALS",
+        "top_target_edges": 46
+      },
+      {
+        "source_category": "HEALTHCARE_PRODUCTS",
+        "eligible_edges": 132,
+        "same_category_edges": 2,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 45
+      },
+      {
+        "source_category": "TEXTILES_APPAREL",
+        "eligible_edges": 132,
+        "same_category_edges": 0,
+        "top_target_category": "VEHICLES_TRANSPORT_EQUIPMENT",
+        "top_target_edges": 41
+      },
+      {
+        "source_category": "ELECTRICAL_EQUIPMENT",
+        "eligible_edges": 79,
+        "same_category_edges": 0,
+        "top_target_category": "ENERGY_FUELS",
+        "top_target_edges": 16
+      },
+      {
+        "source_category": "LOGISTICS_SERVICES",
+        "eligible_edges": 7,
+        "same_category_edges": 0,
+        "top_target_category": "CHEMICALS",
+        "top_target_edges": 2
+      }
+    ],
+    "top_directed_category_pairs": [
+      [
+        "VEHICLES_TRANSPORT_EQUIPMENT",
+        "VEHICLES_TRANSPORT_EQUIPMENT",
+        3401
+      ],
+      [
+        "METALS",
+        "METALS",
+        2614
+      ],
+      [
+        "METALS",
+        "VEHICLES_TRANSPORT_EQUIPMENT",
+        2058
+      ],
+      [
+        "ELECTRONICS",
+        "VEHICLES_TRANSPORT_EQUIPMENT",
+        1410
+      ],
+      [
+        "VEHICLES_TRANSPORT_EQUIPMENT",
+        "METALS",
+        1187
+      ],
+      [
+        "ENERGY_FUELS",
+        "METALS",
+        1100
+      ],
+      [
+        "ENERGY_FUELS",
+        "VEHICLES_TRANSPORT_EQUIPMENT",
+        979
+      ],
+      [
+        "METALS",
+        "ELECTRONICS",
+        949
+      ],
+      [
+        "ELECTRONICS",
+        "METALS",
+        845
+      ],
+      [
+        "CHEMICALS",
+        "METALS",
+        820
+      ]
+    ],
+    "scored_companies": 6708,
+    "unique_scored_descriptions": 3706,
+    "company_scores_below_0_3": 1487,
+    "unique_scores_below_0_3": 595,
+    "example_same_category_cross_location": {
+      "category": "METALS",
+      "company_a": "n1000",
+      "location_a": "South Korea",
+      "description_a": "Copper anode",
+      "company_b": "n1011",
+      "location_b": "United States",
+      "description_b": "Niobium, Software, T-foundry, Software, Long flame coal, Wire rod, Uranium, Wire rods, Molten metal, Anode slime, Small form and t-foundry, Ferrite strontium powder, Heavy angles, High purity, Steel, Hot-rolled steel"
+    }
+  },
+  "failure_experiment": {
+    "projection": "company-only undirected simple graph; self-loops removed",
+    "failure_count": 72,
+    "survivors": 7173,
+    "target_strategy": "highest original undirected degree, fixed ranking",
+    "targeted_largest_component": 6413,
+    "random_trials": 20,
+    "seed": 42,
+    "random_largest_component_mean": 7148.7,
+    "random_largest_component_min": 7090,
+    "random_largest_component_max": 7172,
+    "random_largest_component_each_trial": [
+      7148,
+      7172,
+      7166,
+      7141,
+      7145,
+      7134,
+      7146,
+      7151,
+      7147,
+      7143,
+      7160,
+      7128,
+      7090,
+      7169,
+      7148,
+      7163,
+      7166,
+      7166,
+      7131,
+      7160
+    ]
+  }
+}

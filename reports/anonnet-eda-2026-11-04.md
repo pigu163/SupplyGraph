@@ -105,7 +105,7 @@ Neo4j 5 的 `LOAD CSV` 支持从导入目录读取本地文件；在较大导入
 在项目根目录运行：
 
 ```bash
-uv run python scripts/eda_anonnet.py
+uv run python scripts/data/eda_anonnet.py
 ```
 
 脚本使用 Python CSV 解析器和 NetworkX，输出 JSON，不写入数据库或修改 CSV。节点 ID 和边端点只在比较前去除首尾空格；地点统计只去除首尾空格；未拆分产品或地点。重复边按有序 `(source, target)` 统计；图采用 `DiGraph`，保留自连接；互惠比例排除自连接。度数分位数使用排序后 `floor((n-1) × 分位数)` 的位置。

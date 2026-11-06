@@ -14,7 +14,7 @@ import torch
 from transformers import pipeline
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT = ROOT / "dataset" / "nodes_anon.csv"
 DEFAULT_OUTPUT = ROOT / "dataset" / "derived" / "nodes_anon_categorized.csv"
 DEFAULT_CHECKPOINT = ROOT / "dataset" / "derived" / "anonnet_category_checkpoint.jsonl"
